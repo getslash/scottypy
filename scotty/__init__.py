@@ -1,1 +1,1 @@
-from .beam import beam_up
+from .scotty import Scotty
