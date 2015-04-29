@@ -2,6 +2,7 @@
 .vagrant
 *.egg-info
 build
+_build
 .tox
 flycheck-*
 dist
