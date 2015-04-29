@@ -58,3 +58,21 @@ class Scotty(object):
             combadge.beam_up(beam_id, directory, transporter_host)
 
         return beam_id
+
+    def register_alias(self, beam_id, alias):
+        """Register an alias for the specified beam id"""
+        session = requests.Session()
+        session.headers.update({
+            'Content-Type': 'application/json'})
+
+        data = {
+            "beam_id": beam_id,
+            "alias": alias,
+        }
+        response = session.post("{0}/aliases".format(self._url), data=json.dumps(data))
+        response.raise_for_status()
+
+    def unregister_alias(self, alias):
+        """Unregister the specified alias"""
+        response = requests.delete("{0}/alias/{1}".format(self._url, alias))
+        response.raise_for_status()
