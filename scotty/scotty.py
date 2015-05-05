@@ -59,20 +59,14 @@ class Scotty(object):
 
         return beam_id
 
-    def register_alias(self, beam_id, alias):
-        """Register an alias for the specified beam id"""
+    def add_tag(self, beam_id, tag):
+        """Add the specified tag on the specified beam id"""
         session = requests.Session()
-        session.headers.update({
-            'Content-Type': 'application/json'})
-
-        data = {
-            "beam_id": beam_id,
-            "alias": alias,
-        }
-        response = session.post("{0}/aliases".format(self._url), data=json.dumps(data))
+        response = session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
 
-    def unregister_alias(self, alias):
-        """Unregister the specified alias"""
-        response = requests.delete("{0}/alias/{1}".format(self._url, alias))
+    def remove_tag(self, beam_id, tag):
+        """Remove the specified tag from the specified beam id"""
+        session = requests.Session()
+        response = session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
