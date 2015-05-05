@@ -59,6 +59,32 @@ class Scotty(object):
 
         return beam_id
 
+    def initiate_beam(self, user, host, directory, password=None, rsa_key=None):
+        """Order scotty to beam the specified directory from the specified host.
+        Either password or rsa_key should be specified, but not both.
+        Returns the Beam ID."""
+        if (password and rsa_key) or not (password or rsa_key):
+            raise Exception("Either password or rsa_key should be specified")
+
+        session = requests.Session()
+        session.headers.update({
+            'Content-Type': 'application/json'})
+
+        beam = {
+            'directory': os.path.abspath(directory),
+            'host': host,
+            'user': user,
+            'ssh_key': rsa_key,
+            'password': password,
+            'auth_method': 'rsa' if rsa_key else 'password'
+        }
+
+        response = session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
+        response.raise_for_status()
+
+        beam_data = response.json()
+        return beam_data['beam']['id']
+
     def add_tag(self, beam_id, tag):
         """Add the specified tag on the specified beam id"""
         session = requests.Session()
