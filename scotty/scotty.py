@@ -74,7 +74,7 @@ class TempDir(object):
 
 class Scotty(object):
     """Main class that communicates with Scotty"""
-    def __init__(self, url="http://scotty"):
+    def __init__(self, url="http://scotty.lab.il.infinidat.com"):
         self._url = url
 
     def beam_up(self, directory):
