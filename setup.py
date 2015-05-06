@@ -10,6 +10,7 @@ with open(_in_same_dir("scotty", "__version__.py")) as version_file:
 install_requires = [
     "emport",
     "requests",
+    "python-dateutil",
 ]
 
 setup(name="scotty",

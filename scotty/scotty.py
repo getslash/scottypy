@@ -5,6 +5,59 @@ import socket
 import tempfile
 import shutil
 import emport
+import dateutil.parser
+
+
+class File(object):
+    def __init__(self, id_, file_name, status, storage_name, size, scotty_url):
+        """A class representing a single file"""
+        self.id = id_
+        self.file_name = file_name
+        self.status = status
+        self.storage_name = storage_name
+        self.size = size
+        self.scotty_url = scotty_url
+        self.link = "{0}/file_contents/{1}".format(scotty_url, storage_name)
+
+    @classmethod
+    def from_json(cls, json_node, url):
+        return cls(json_node['id'], json_node['file_name'], json_node['status'], json_node['storage_name'],
+                   json_node['size'], url)
+
+
+class Beam(object):
+    """A class representing a single beam"""
+    def __init__(self, id_, files, initiator_id, start, deleted, completed, pins, host, error, directory,
+                 purge_time, size):
+        self.id = id_
+        self.files = files
+        self.initiator_id = initiator_id
+        self.start = start
+        self.deleted = deleted
+        self.completed = completed
+        self.pins = pins
+        self.host = host
+        self.error = error
+        self.directory = directory
+        self.purge_time = purge_time
+        self.size = size
+
+    @classmethod
+    def from_json(cls, json_node, file_dict):
+        files = [file_dict[id_] for id_ in json_node['files']]
+        return cls(
+            json_node['id'],
+            files,
+            json_node['initiator'],
+            dateutil.parser.parse(json_node['start']),
+            json_node['deleted'],
+            json_node['completed'],
+            json_node['pins'],
+            json_node['host'],
+            json_node['error'],
+            json_node['directory'],
+            json_node['purge_time'],
+            json_node['size'])
 
 
 class TempDir(object):
@@ -96,3 +149,13 @@ class Scotty(object):
         session = requests.Session()
         response = session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
+
+    def get_beam(self, beam_id):
+        """Retrieve details about the specified beam"""
+        session = requests.Session()
+        response = session.get("{0}/beams/{1}".format(self._url, beam_id))
+        response.raise_for_status()
+
+        json_response = response.json()
+        files = {f.id: f for f in (File.from_json(node, self._url) for node in json_response['files'])}
+        return Beam.from_json(json_response['beam'], files)
