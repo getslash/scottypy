@@ -9,20 +9,19 @@ import dateutil.parser
 
 
 class File(object):
-    def __init__(self, id_, file_name, status, storage_name, size, scotty_url):
+    def __init__(self, id_, file_name, status, storage_name, size, url):
         """A class representing a single file"""
         self.id = id_
         self.file_name = file_name
         self.status = status
         self.storage_name = storage_name
         self.size = size
-        self.scotty_url = scotty_url
-        self.link = "{0}/file_contents/{1}".format(scotty_url, storage_name)
+        self.url = url
 
     @classmethod
-    def from_json(cls, json_node, url):
+    def from_json(cls, json_node):
         return cls(json_node['id'], json_node['file_name'], json_node['status'], json_node['storage_name'],
-                   json_node['size'], url)
+                   json_node['size'], json_node['url'])
 
 
 class Beam(object):
@@ -157,5 +156,5 @@ class Scotty(object):
         response.raise_for_status()
 
         json_response = response.json()
-        files = {f.id: f for f in (File.from_json(node, self._url) for node in json_response['files'])}
+        files = {f.id: f for f in (File.from_json(node) for node in json_response['files'])}
         return Beam.from_json(json_response['beam'], files)
