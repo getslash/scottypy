@@ -98,7 +98,7 @@ class Scotty(object):
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
 
-        response = session.get("{0}/combadge".format(self._url))
+        response = session.get("{0}/static/assets/combadge.py".format(self._url))
         response.raise_for_status()
 
         with TempDir() as work_dir:
