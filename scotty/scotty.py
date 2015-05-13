@@ -9,8 +9,16 @@ import dateutil.parser
 
 
 class File(object):
+    """A class representing a single file
+
+    :ivar id: The ID of the file.
+    :ivar file_name: The file name.
+    :ivar status: A string representing the status of the file.
+    :ivar storage_name: The file name in Scotty's file system.
+    :ivar size: The size of the file in bytes.
+    :ivar url: A URL for downloading the file."""
     def __init__(self, id_, file_name, status, storage_name, size, url):
-        """A class representing a single file"""
+
         self.id = id_
         self.file_name = file_name
         self.status = status
@@ -25,7 +33,21 @@ class File(object):
 
 
 class Beam(object):
-    """A class representing a single beam"""
+    """A class representing a single beam.
+
+    :ivar id: The ID of the beam.
+    :ivar files: A list of files associated with this beam.
+    :ivar initiator_id: The user ID of the beam initiator.
+    :ivar start: When was the beam started.
+    :ivar deleted: Is the beam deleted.
+    :ivar completed: Is the beam completed.
+    :ivar pins: A list of user IDs which pin this beam.
+    :ivar host: The host from which the files were beamed up.
+    :ivar error: A string representing a possible error that occurred during this beam.
+    :ivar directory: The path to the directory that was beamed.
+    :ivar purge_time: The number of days left for this beam to exist if it has no pinners.
+    :ivar size: The total size of the beam in bytes.
+    """
     def __init__(self, id_, files, initiator_id, start, deleted, completed, pins, host, error, directory,
                  purge_time, size):
         self.id = id_
@@ -72,12 +94,18 @@ class TempDir(object):
 
 
 class Scotty(object):
-    """Main class that communicates with Scotty"""
+    """Main class that communicates with Scotty.
+
+    :param str url: The base URL of Scotty."""
     def __init__(self, url="http://scotty.lab.il.infinidat.com"):
         self._url = url
 
     def beam_up(self, directory, email=None):
-        """Beam up the specified local directory to Scotty. Returns the beam ID"""
+        """Beam up the specified local directory to Scotty.
+
+        :param str directory: Local directory to beam.
+        :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
+        :return: the beam id."""
         session = requests.Session()
         session.headers.update({
             'Content-Type': 'application/json'})
@@ -116,8 +144,17 @@ class Scotty(object):
 
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None):
         """Order scotty to beam the specified directory from the specified host.
-        Either password or rsa_key should be specified, but not both.
-        Returns the Beam ID."""
+
+        :param str user: The username in the remote machine.
+        :param str host: The remote host.
+        :param str directory: Remote directory to beam.
+        :param str password: Password of the username.
+        :param str rsa_key: RSA private key for authentication.
+        :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
+
+        Either `password` or `rsa_key` should be specified, but no both.
+
+        :return: the beam id."""
         if (password and rsa_key) or not (password or rsa_key):
             raise Exception("Either password or rsa_key should be specified")
 
@@ -144,19 +181,28 @@ class Scotty(object):
         return beam_data['beam']['id']
 
     def add_tag(self, beam_id, tag):
-        """Add the specified tag on the specified beam id"""
+        """Add the specified tag on the specified beam id.
+
+        :param int beam_id: Beam ID.
+        :param str tag: Tag name."""
         session = requests.Session()
         response = session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
 
     def remove_tag(self, beam_id, tag):
-        """Remove the specified tag from the specified beam id"""
+        """Remove the specified tag from the specified beam id.
+
+        :param int beam_id: Beam ID.
+        :param str tag: Tag name."""
         session = requests.Session()
         response = session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
 
     def get_beam(self, beam_id):
-        """Retrieve details about the specified beam"""
+        """Retrieve details about the specified beam.
+
+        :param int beam_id: Beam ID.
+        :rtype: :class:`.Beam`"""
         session = requests.Session()
         response = session.get("{0}/beams/{1}".format(self._url, beam_id))
         response.raise_for_status()
