@@ -1,7 +1,8 @@
 import os
 import gzip
+from requests import HTTPError
 from contextlib import closing
-from slash import parametrize
+from slash import parametrize, assert_raises
 
 
 _LOG = """I can see what you see not
@@ -14,27 +15,34 @@ Out of darkness, out of mind,
 Cast down into the Halls of the Blind."""
 
 
-def _local_beam(scotty):
-    return scotty.beam_up('build')
+def _local_beam(scotty, email):
+    return scotty.beam_up('build', email=email)
 
 
-def _remote_beam_password(scotty):
-    return scotty.initiate_beam('vagrant', '192.168.50.4', '/home/vagrant', password='vagrant')
+def _remote_beam_password(scotty, email):
+    return scotty.initiate_beam('vagrant', '192.168.50.4', '/home/vagrant', password='vagrant', email=email)
 
 
-def _remote_beam_rsa(scotty):
+def _remote_beam_rsa(scotty, email):
     with open(os.path.expanduser("~/.vagrant.d/insecure_private_key"), "r") as f:
         key = f.read()
 
-    return scotty.initiate_beam('vagrant', '192.168.50.4', '/home/vagrant', rsa_key=key)
+    return scotty.initiate_beam('vagrant', '192.168.50.4', '/home/vagrant', rsa_key=key, email=email)
 
 
 @parametrize('beam_function', [_local_beam, _remote_beam_password, _remote_beam_rsa])
-def test_sanity(scotty, beam_function):
-    beam_id = beam_function(scotty)
+@parametrize('email', [None, 'roeyd@infinidat.com'])
+def test_sanity(scotty, beam_function, email):
+    beam_id = beam_function(scotty, email)
     scotty.add_tag(beam_id, 'test')
     scotty.remove_tag(beam_id, 'test')
     scotty.get_beam(beam_id)
+
+
+def test_invalid_email(scotty):
+    with assert_raises(HTTPError) as e:
+        scotty.beam_up('build', email='roeyd@infinidat.co')
+    assert e.exception.response.status_code == 409
 
 
 def test_compressed_file(scotty, tempdir):

@@ -76,7 +76,7 @@ class Scotty(object):
     def __init__(self, url="http://scotty.lab.il.infinidat.com"):
         self._url = url
 
-    def beam_up(self, directory):
+    def beam_up(self, directory, email=None):
         """Beam up the specified local directory to Scotty. Returns the beam ID"""
         session = requests.Session()
         session.headers.update({
@@ -91,6 +91,9 @@ class Scotty(object):
             'host': socket.gethostname(),
             'auth_method': 'independent'
         }
+
+        if email:
+            beam['email'] = email
 
         response = session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
         response.raise_for_status()
@@ -111,7 +114,7 @@ class Scotty(object):
 
         return beam_id
 
-    def initiate_beam(self, user, host, directory, password=None, rsa_key=None):
+    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None):
         """Order scotty to beam the specified directory from the specified host.
         Either password or rsa_key should be specified, but not both.
         Returns the Beam ID."""
@@ -130,6 +133,9 @@ class Scotty(object):
             'password': password,
             'auth_method': 'rsa' if rsa_key else 'password'
         }
+
+        if email:
+            beam['email'] = email
 
         response = session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
         response.raise_for_status()
