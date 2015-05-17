@@ -208,5 +208,8 @@ class Scotty(object):
         response.raise_for_status()
 
         json_response = response.json()
-        files = {f.id: f for f in (File.from_json(node) for node in json_response['files'])}
+        files = {}
+        for node in json_response['files']:
+            f = File.from_json(node)
+            files[f.id] = f
         return Beam.from_json(json_response['beam'], files)
