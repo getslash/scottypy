@@ -9,6 +9,10 @@ Welcome to Scotty's documentation!
 .. autoclass:: scotty.Scotty
     :members:
 
+.. autoclass:: scotty.scotty.Beam
+
+.. autoclass:: scotty.scotty.File
+
 Contents:
 
 .. toctree::
