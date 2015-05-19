@@ -11,14 +11,12 @@ Welcome to Scotty's documentation!
 
 .. autoclass:: scotty.scotty.Beam
 
-.. autoclass:: scotty.scotty.File
-
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-
+   examples
 
 Indices and tables
 ==================

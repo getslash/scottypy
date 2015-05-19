@@ -208,5 +208,24 @@ class Scotty(object):
         response.raise_for_status()
 
         json_response = response.json()
-        files = {f.id: f for f in (File.from_json(node) for node in json_response['files'])}
+        files = {}
+        for node in json_response['files']:
+            f = File.from_json(node)
+            files[f.id] = f
         return Beam.from_json(json_response['beam'], files)
+
+    def get_beams_by_tag(self, tag):
+        """Retrieve the list of beams associated with the specified tag.
+
+        :param str tag: The name of the tag.
+        :return: a list of :class:`.Beam` objects.
+        """
+        session = requests.Session()
+        session.headers.update({
+            'Content-Type': 'application/json'})
+
+        response = session.get("{0}/beams?tag={1}".format(self._url, tag))
+        response.raise_for_status()
+
+        ids = (b['id'] for b in response.json()['beams'])
+        return [self.get_beam(id_) for id_ in ids]
