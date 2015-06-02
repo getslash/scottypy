@@ -36,7 +36,6 @@ class Beam(object):
     """A class representing a single beam.
 
     :ivar id: The ID of the beam.
-    :ivar files: A list of files associated with this beam.
     :ivar initiator_id: The user ID of the beam initiator.
     :ivar start: When was the beam started.
     :ivar deleted: Is the beam deleted.
@@ -48,10 +47,10 @@ class Beam(object):
     :ivar purge_time: The number of days left for this beam to exist if it has no pinners.
     :ivar size: The total size of the beam in bytes.
     """
-    def __init__(self, id_, files, initiator_id, start, deleted, completed, pins, host, error, directory,
+    def __init__(self, id_, file_ids, initiator_id, start, deleted, completed, pins, host, error, directory,
                  purge_time, size):
         self.id = id_
-        self.files = files
+        self._file_ids = file_ids
         self.initiator_id = initiator_id
         self.start = start
         self.deleted = deleted
@@ -64,11 +63,10 @@ class Beam(object):
         self.size = size
 
     @classmethod
-    def from_json(cls, json_node, file_dict):
-        files = [file_dict[id_] for id_ in json_node['files']]
+    def from_json(cls, json_node):
         return cls(
             json_node['id'],
-            files,
+            json_node['files'],
             json_node['initiator'],
             dateutil.parser.parse(json_node['start']),
             json_node['deleted'],
@@ -208,11 +206,7 @@ class Scotty(object):
         response.raise_for_status()
 
         json_response = response.json()
-        files = {}
-        for node in json_response['files']:
-            f = File.from_json(node)
-            files[f.id] = f
-        return Beam.from_json(json_response['beam'], files)
+        return Beam.from_json(json_response['beam'])
 
     def get_beams_by_tag(self, tag):
         """Retrieve the list of beams associated with the specified tag.
