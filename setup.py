@@ -30,7 +30,7 @@ setup(name="scotty",
       install_requires=install_requires,
       entry_points=dict(
           console_scripts=[
-              "beamup  = scotty.frontend:main",
+              "beamup  = scotty.beamup:main",
           ]
       ),
 )
