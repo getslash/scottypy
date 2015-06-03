@@ -8,6 +8,9 @@ import emport
 import dateutil.parser
 
 
+_CHUNK_SIZE = 1024 ** 2 * 4
+
+
 class File(object):
     """A class representing a single file
 
@@ -30,6 +33,23 @@ class File(object):
     def from_json(cls, json_node):
         return cls(json_node['id'], json_node['file_name'], json_node['status'], json_node['storage_name'],
                    json_node['size'], json_node['url'])
+
+    def stream_to(self, fileobj):
+        """Fetch the file content from the server and write it to fileobj"""
+        session = requests.Session()
+        session.headers.update({
+            'Accept-Encoding': 'gzip'})
+
+        response = session.get(self.url, stream=True)
+        response.raise_for_status()
+
+        for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
+            fileobj.write(chunk)
+
+    def download(self, directory="."):
+        """Download the file to the specified directory, retaining its name"""
+        with open(os.path.join(directory, os.path.basename(self.storage_name)), "wb") as f:
+            return self.stream_to(f)
 
 
 class Beam(object):

@@ -17,4 +17,4 @@ Downloading Slash log files
     for beam in beams:
         for file in beam.iter_files():
             if file.file_name.endswith("debug.log.gz"):
-                check_call(['curl', '--compressed', '-O', file.url])
+                file.download()
