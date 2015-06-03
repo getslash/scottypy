@@ -34,10 +34,10 @@ def _remote_beam_rsa(scotty, email):
 @parametrize('email', [None, 'roeyd@infinidat.com'])
 def test_sanity(scotty, beam_function, email):
     beam_id = beam_function(scotty, email)
-    scotty.add_tag(beam_id, 'test')
-    assert beam_id in [b.id for b in scotty.get_beams_by_tag('test')]
-    scotty.remove_tag(beam_id, 'test')
-    assert beam_id not in [b.id for b in scotty.get_beams_by_tag('test')]
+    scotty.add_tag(beam_id, 'tag/with/slashes')
+    assert beam_id in [b.id for b in scotty.get_beams_by_tag('tag/with/slashes')]
+    scotty.remove_tag(beam_id, 'tag/with/slashes')
+    assert beam_id not in [b.id for b in scotty.get_beams_by_tag('tag/with/slashes')]
     scotty.get_beam(beam_id)
 
 
