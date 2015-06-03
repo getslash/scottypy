@@ -10,6 +10,10 @@ Welcome to Scotty's documentation!
     :members:
 
 .. autoclass:: scotty.scotty.Beam
+    :members:
+
+.. autoclass:: scotty.scotty.File
+    :members:
 
 Contents:
 

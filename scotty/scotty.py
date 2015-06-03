@@ -47,7 +47,7 @@ class Beam(object):
     :ivar purge_time: The number of days left for this beam to exist if it has no pinners.
     :ivar size: The total size of the beam in bytes.
     """
-    def __init__(self, id_, file_ids, initiator_id, start, deleted, completed, pins, host, error, directory,
+    def __init__(self, scotty, id_, file_ids, initiator_id, start, deleted, completed, pins, host, error, directory,
                  purge_time, size):
         self.id = id_
         self._file_ids = file_ids
@@ -61,10 +61,12 @@ class Beam(object):
         self.directory = directory
         self.purge_time = purge_time
         self.size = size
+        self._scotty = scotty
 
     @classmethod
-    def from_json(cls, json_node):
+    def from_json(cls, scotty, json_node):
         return cls(
+            scotty,
             json_node['id'],
             json_node['files'],
             json_node['initiator'],
@@ -77,6 +79,11 @@ class Beam(object):
             json_node['directory'],
             json_node['purge_time'],
             json_node['size'])
+
+    def iter_files(self):
+        """Iterate the beam files, yielding :class:`.File` objects"""
+        for id_ in self._file_ids:
+            yield self._scotty.get_file(id_)
 
 
 class TempDir(object):
@@ -206,7 +213,19 @@ class Scotty(object):
         response.raise_for_status()
 
         json_response = response.json()
-        return Beam.from_json(json_response['beam'])
+        return Beam.from_json(self, json_response['beam'])
+
+    def get_file(self, file_id):
+        """Retrieve details about the specified file.
+
+        :param int file_id: File ID.
+        :rtype: :class:`.File`"""
+        session = requests.Session()
+        response = session.get("{0}/files/{1}".format(self._url, file_id))
+        response.raise_for_status()
+
+        json_response = response.json()
+        return File.from_json(json_response['file'])
 
     def get_beams_by_tag(self, tag):
         """Retrieve the list of beams associated with the specified tag.

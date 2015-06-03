@@ -58,12 +58,12 @@ def test_compressed_file(scotty, tempdir):
 
     beam_id = scotty.beam_up(tempdir)
     beam = scotty.get_beam(beam_id)
-    assert len(beam.files) == 2
+    assert len(list(beam.iter_files())) == 2
 
     found_compressed = False
     found_uncompressed = False
 
-    for beamed_file in beam.files:
+    for beamed_file in beam.iter_files():
         full_path = os.path.join("/var/scotty", beamed_file.storage_name)
         if full_path.endswith(".gz"):
             found_compressed = True
@@ -89,9 +89,10 @@ def test_single_file(scotty, tempdir, compressed):
 
     beam_id = scotty.beam_up(path)
     beam = scotty.get_beam(beam_id)
-    assert len(beam.files) == 1
+    files = list(beam.iter_files())
+    assert len(files) == 1
 
-    beamed_file = beam.files[0].storage_name
+    beamed_file = files[0].storage_name
     full_path = os.path.join("/var/scotty", beamed_file)
     if compressed:
         assert full_path.endswith(".log.gz")
