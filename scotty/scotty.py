@@ -6,56 +6,15 @@ import tempfile
 import shutil
 import emport
 import dateutil.parser
-import traceback
 from logging import getLogger
-from functools import partial
-from time import sleep
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 
 _CHUNK_SIZE = 1024 ** 2 * 4
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
 logger = getLogger("scotty")
-
-
-class ScottySession(object):
-    def __init__(self):
-        self._session = requests.Session()
-        self._session.headers.update({
-            'Accept-Encoding': 'gzip',
-            'Content-Type': 'application/json'})
-
-    def _retry(self, f):
-        attempt = 1
-        while True:
-            try:
-                return f()
-            except Exception:
-                should_retry = attempt < _NUM_OF_RETRIES
-                logger.error(
-                    "Attempt %d of beaming failed. %s. %s",
-                    attempt,
-                    "retrying" if should_retry else "exiting",
-                    traceback.format_exc())
-                if not should_retry:
-                    raise
-                else:
-                    logger.info(
-                        "Sleeping %d seconds before reattempting (%d/%d)", _SLEEP_TIME, attempt, _NUM_OF_RETRIES)
-                    attempt += 1
-                    sleep(_SLEEP_TIME)
-
-    def get(self, *args, **kwargs):
-        return self._retry(partial(self._session.get, *args, **kwargs))
-
-    def post(self, *args, **kwargs):
-        return self._retry(partial(self._session.post, *args, **kwargs))
-
-    def put(self, *args, **kwargs):
-        return self._retry(partial(self._session.put, *args, **kwargs))
-
-    def delete(self, *args, **kwargs):
-        return self._retry(partial(self._session.delete, *args, **kwargs))
 
 
 class File(object):
@@ -67,9 +26,10 @@ class File(object):
     :ivar storage_name: The file name in Scotty's file system.
     :ivar size: The size of the file in bytes.
     :ivar url: A URL for downloading the file."""
-    def __init__(self, id_, file_name, status, storage_name, size, url):
+    def __init__(self, session, id_, file_name, status, storage_name, size, url):
 
         self.id = id_
+        self._session = session
         self.file_name = file_name
         self.status = status
         self.storage_name = storage_name
@@ -77,15 +37,13 @@ class File(object):
         self.url = url
 
     @classmethod
-    def from_json(cls, json_node):
-        return cls(json_node['id'], json_node['file_name'], json_node['status'], json_node['storage_name'],
+    def from_json(cls, session, json_node):
+        return cls(session, json_node['id'], json_node['file_name'], json_node['status'], json_node['storage_name'],
                    json_node['size'], json_node['url'])
 
     def stream_to(self, fileobj):
         """Fetch the file content from the server and write it to fileobj"""
-        session = ScottySession()
-
-        response = session.get(self.url, stream=True)
+        response = self._session.get(self.url, stream=True)
         response.raise_for_status()
 
         for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
@@ -169,6 +127,8 @@ class Scotty(object):
     :param str url: The base URL of Scotty."""
     def __init__(self, url="http://scotty.lab.il.infinidat.com"):
         self._url = url
+        self._session = requests.Session()
+        self._session.mount(url, HTTPAdapter(max_retries=Retry(total=10, status_forcelist=[502, 504], backoff_factor=3)))
 
     def beam_up(self, directory, email=None):
         """Beam up the specified local directory to Scotty.
@@ -176,8 +136,7 @@ class Scotty(object):
         :param str directory: Local directory to beam.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :return: the beam id."""
-        session = ScottySession()
-        response = session.get("{0}/info".format(self._url))
+        response = self._session.get("{0}/info".format(self._url))
         response.raise_for_status()
         transporter_host = response.json()['transporter']
 
@@ -190,13 +149,14 @@ class Scotty(object):
         if email:
             beam['email'] = email
 
-        response = session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
+        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
         response.raise_for_status()
 
         beam_data = response.json()
+        import ipdb;ipdb.set_trace()
         beam_id = beam_data['beam']['id']
 
-        response = session.get("{0}/static/assets/combadge.py".format(self._url))
+        response = self._session.get("{0}/static/assets/combadge.py".format(self._url))
         response.raise_for_status()
 
         with TempDir() as work_dir:
@@ -225,7 +185,6 @@ class Scotty(object):
         if (password and rsa_key) or not (password or rsa_key):
             raise Exception("Either password or rsa_key should be specified")
 
-        session = ScottySession()
 
         beam = {
             'directory': os.path.abspath(directory),
@@ -239,7 +198,7 @@ class Scotty(object):
         if email:
             beam['email'] = email
 
-        response = session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
+        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
         response.raise_for_status()
 
         beam_data = response.json()
@@ -250,8 +209,7 @@ class Scotty(object):
 
         :param int beam_id: Beam ID.
         :param str tag: Tag name."""
-        session = ScottySession()
-        response = session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
+        response = self._session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
 
     def remove_tag(self, beam_id, tag):
@@ -259,8 +217,7 @@ class Scotty(object):
 
         :param int beam_id: Beam ID.
         :param str tag: Tag name."""
-        session = ScottySession()
-        response = session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
+        response = self._session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
         response.raise_for_status()
 
     def get_beam(self, beam_id):
@@ -268,8 +225,7 @@ class Scotty(object):
 
         :param int beam_id: Beam ID.
         :rtype: :class:`.Beam`"""
-        session = ScottySession()
-        response = session.get("{0}/beams/{1}".format(self._url, beam_id))
+        response = self._session.get("{0}/beams/{1}".format(self._url, beam_id))
         response.raise_for_status()
 
         json_response = response.json()
@@ -280,12 +236,11 @@ class Scotty(object):
 
         :param int file_id: File ID.
         :rtype: :class:`.File`"""
-        session = ScottySession()
-        response = session.get("{0}/files/{1}".format(self._url, file_id))
+        response = self._session.get("{0}/files/{1}".format(self._url, file_id))
         response.raise_for_status()
 
         json_response = response.json()
-        return File.from_json(json_response['file'])
+        return File.from_json(self._session, json_response['file'])
 
     def get_beams_by_tag(self, tag):
         """Retrieve the list of beams associated with the specified tag.
@@ -293,9 +248,8 @@ class Scotty(object):
         :param str tag: The name of the tag.
         :return: a list of :class:`.Beam` objects.
         """
-        session = ScottySession()
 
-        response = session.get("{0}/beams?tag={1}".format(self._url, tag))
+        response = self._session.get("{0}/beams?tag={1}".format(self._url, tag))
         response.raise_for_status()
 
         ids = (b['id'] for b in response.json()['beams'])
