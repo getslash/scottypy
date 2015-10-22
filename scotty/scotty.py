@@ -128,6 +128,9 @@ class Scotty(object):
     def __init__(self, url="http://scotty.lab.il.infinidat.com"):
         self._url = url
         self._session = requests.Session()
+        self._session.headers.update({
+            'Accept-Encoding': 'gzip',
+            'Content-Type': 'application/json'})
         self._session.mount(url, HTTPAdapter(max_retries=Retry(total=10, status_forcelist=[502, 504], backoff_factor=3)))
 
     def beam_up(self, directory, email=None):
@@ -153,7 +156,6 @@ class Scotty(object):
         response.raise_for_status()
 
         beam_data = response.json()
-        import ipdb;ipdb.set_trace()
         beam_id = beam_data['beam']['id']
 
         response = self._session.get("{0}/static/assets/combadge.py".format(self._url))
