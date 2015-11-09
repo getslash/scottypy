@@ -60,6 +60,10 @@ class File(object):
         subdir, file_ = os.path.split(self.file_name)
         subdir = os.path.join(directory, subdir)
         file_ = os.path.join(subdir, file_)
+
+        if file_.endswith(".gz") and not self.url.endswith(".gz"):
+            file_ = file_[:-3]
+
         if not os.path.isdir(subdir):
             os.makedirs(subdir)
 
