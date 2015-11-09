@@ -33,6 +33,7 @@ setup(name="scotty",
           console_scripts=[
               "beamup  = scotty.beamup:main",
               "beamdown  = scotty.beamdown:main",
+              "beamlink  = scotty.beamlink:main",
           ]
       ),
 )
