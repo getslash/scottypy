@@ -17,6 +17,12 @@ _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
 logger = getLogger("scotty")
 
 
+class NotOverwriting(Exception):
+    def __init__(self, file_):
+        super(NotOverwriting, self).__init__()
+        self.file = file_
+
+
 class File(object):
     """A class representing a single file
 
@@ -49,9 +55,18 @@ class File(object):
         for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
             fileobj.write(chunk)
 
-    def download(self, directory="."):
+    def download(self, directory=".", overwrite=False):
         """Download the file to the specified directory, retaining its name"""
-        with open(os.path.join(directory, os.path.basename(self.storage_name)), "wb") as f:
+        subdir, file_ = os.path.split(self.file_name)
+        subdir = os.path.join(directory, subdir)
+        file_ = os.path.join(subdir, file_)
+        if not os.path.isdir(subdir):
+            os.makedirs(subdir)
+
+        if os.path.isfile(file_) and not overwrite:
+            raise NotOverwriting(file_)
+
+        with open(file_, "wb") as f:
             return self.stream_to(f)
 
 
