@@ -1,1 +1,1 @@
-from .scotty import Scotty
+from .scotty import Scotty, NotOverwriting

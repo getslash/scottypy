@@ -11,6 +11,7 @@ install_requires = [
     "emport",
     "requests",
     "python-dateutil",
+    "click"
 ]
 
 setup(name="scotty",
@@ -31,6 +32,7 @@ setup(name="scotty",
       entry_points=dict(
           console_scripts=[
               "beamup  = scotty.beamup:main",
+              "beamdown  = scotty.beamdown:main",
           ]
       ),
 )
