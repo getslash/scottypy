@@ -17,6 +17,11 @@ _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
 logger = getLogger("scotty")
 
 
+class PathNotExists(Exception):
+    def __init__(self, path):
+        super(PathNotExists, self).__init__("{} does not exist".format(path))
+
+
 class NotOverwriting(Exception):
     def __init__(self, file_):
         super(NotOverwriting, self).__init__()
@@ -158,6 +163,9 @@ class Scotty(object):
         :param str directory: Local directory to beam.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :return: the beam id."""
+        if not os.path.exists(directory):
+            raise PathNotExists(directory)
+
         response = self._session.get("{0}/info".format(self._url))
         response.raise_for_status()
         transporter_host = response.json()['transporter']
