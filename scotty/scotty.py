@@ -157,7 +157,7 @@ class Scotty(object):
             'Content-Type': 'application/json'})
         self._session.mount(url, HTTPAdapter(max_retries=Retry(total=10, status_forcelist=[502, 504], backoff_factor=3)))
 
-    def beam_up(self, directory, email=None):
+    def beam_up(self, directory, email=None, beam_type=None):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
@@ -173,7 +173,8 @@ class Scotty(object):
         beam = {
             'directory': os.path.abspath(directory),
             'host': socket.gethostname(),
-            'auth_method': 'independent'
+            'auth_method': 'independent',
+            'type': beam_type
         }
 
         if email:
