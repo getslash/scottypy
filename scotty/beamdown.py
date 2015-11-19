@@ -9,15 +9,16 @@ from . import Scotty, NotOverwriting
 @click.option('--url', default='http://scotty.infinidat.com', help='Base URL of Scotty')
 @click.option('-f', '--filter', default=None, help="Download only files that contain the given string in their name (case insensetive)")
 @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing files on the disk')
-def main(beam_id, dest, url, overwrite, filter):
+def main(beam_id, dest, url, overwrite, filter): # pylint: disable=W0622
     scotty = Scotty(url)
 
     beam = scotty.get_beam(beam_id)
 
     if dest is None:
         dest = beam_id
-        if not os.path.isdir(dest):
-            os.mkdir(dest)
+
+    if not os.path.isdir(dest):
+        os.makedirs(dest)
 
     click.echo("Downloading beam {} to directory {}".format(beam_id, dest))
 
