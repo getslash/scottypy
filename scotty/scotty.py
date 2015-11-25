@@ -174,7 +174,7 @@ class Scotty(object):
     """Main class that communicates with Scotty.
 
     :param str url: The base URL of Scotty."""
-    def __init__(self, url="http://scotty.lab.il.infinidat.com"):
+    def __init__(self, url="http://scotty.infinidat.com"):
         self._url = url
         self._session = requests.Session()
         self._session.headers.update({
