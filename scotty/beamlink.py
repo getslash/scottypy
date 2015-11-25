@@ -18,13 +18,6 @@ def main(beam_id, url, storage_base, name):
         os.mkdir(dest)
 
     for file_ in beam.iter_files():
-        source_path = os.path.join(storage_base, file_.storage_name)
-        link_path = os.path.join(dest, file_.file_name)
-        link_dir = os.path.split(link_path)[0]
-
-        if not os.path.isdir(link_dir):
-            os.makedirs(link_dir)
-
-        os.symlink(source_path, link_path)
+        file_.link(storage_base, dest)
 
     click.echo("Created a view of beam {} in {}".format(dest, dest))
