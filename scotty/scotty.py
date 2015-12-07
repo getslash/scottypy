@@ -88,7 +88,7 @@ class File(object):
 
         if self.mtime is not None:
             mtime = _to_epoch(self.mtime)
-            os.utime(file_, times=(mtime, mtime))
+            os.utime(file_, (mtime, mtime))
 
     def link(self, storage_base, dest):
         source_path = os.path.join(storage_base, self.storage_name)
