@@ -309,3 +309,10 @@ class Scotty(object):
 
         ids = (b['id'] for b in response.json()['beams'])
         return [self.get_beam(id_) for id_ in ids]
+
+    def sanity_check(self):
+        """Check if this instance of Scotty is functioning. Raise an exception if something's wrong"""
+        response = requests.get("{0}/info".format(self._url))
+        response.raise_for_status()
+        info = json.loads(response.text)
+        assert 'version' in info

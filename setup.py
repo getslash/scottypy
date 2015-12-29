@@ -31,9 +31,10 @@ setup(name="scotty",
       install_requires=install_requires,
       entry_points=dict(
           console_scripts=[
-              "beamup  = scotty.beamup:main",
-              "beamdown  = scotty.beamdown:main",
-              "beamlink  = scotty.beamlink:main",
+              "beamup  = scotty.app:obsolete_command",
+              "beamdown  = scotty.app:obsolete_command",
+              "beamlink  = scotty.app:obsolete_command",
+              "scotty  = scotty.app:main",
           ]
       ),
 )
