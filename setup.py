@@ -4,7 +4,7 @@ import os
 import platform
 
 _in_same_dir = functools.partial(os.path.join, os.path.dirname(__file__))
-with open(_in_same_dir("scotty", "__version__.py")) as version_file:
+with open(_in_same_dir("scottypy", "__version__.py")) as version_file:
     exec(version_file.read())  # pylint: disable=W0122
 
 install_requires = [
@@ -14,7 +14,7 @@ install_requires = [
     "click"
 ]
 
-setup(name="scotty",
+setup(name="scottypy",
       classifiers=[
           "Programming Language :: Python :: 2.6",
           "Programming Language :: Python :: 2.7",
@@ -24,17 +24,17 @@ setup(name="scotty",
       description="A library for beaming up files to Scotty",
       license="BSD",
       author="Roey Darwish Dror",
-      author_email="roeyd@infinidat.com",
+      author_email="roey.ghost@gmail.com",
       url="http://git.infinidat.com/roeyd/scotty-python",
       version=__version__,  # pylint: disable=E0602
       packages=find_packages(exclude=["tests"]),
       install_requires=install_requires,
       entry_points=dict(
           console_scripts=[
-              "beamup  = scotty.app:obsolete_command",
-              "beamdown  = scotty.app:obsolete_command",
-              "beamlink  = scotty.app:obsolete_command",
-              "scotty  = scotty.app:main",
+              "beamup  = scottypy.app:obsolete_command",
+              "beamdown  = scottypy.app:obsolete_command",
+              "beamlink  = scottypy.app:obsolete_command",
+              "scotty  = scottypy.app:main",
           ]
       ),
 )
