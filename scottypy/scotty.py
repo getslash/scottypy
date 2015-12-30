@@ -174,7 +174,7 @@ class Scotty(object):
     """Main class that communicates with Scotty.
 
     :param str url: The base URL of Scotty."""
-    def __init__(self, url="http://scotty.infinidat.com"):
+    def __init__(self, url):
         self._url = url
         self._session = requests.Session()
         self._session.headers.update({
@@ -309,3 +309,10 @@ class Scotty(object):
 
         ids = (b['id'] for b in response.json()['beams'])
         return [self.get_beam(id_) for id_ in ids]
+
+    def sanity_check(self):
+        """Check if this instance of Scotty is functioning. Raise an exception if something's wrong"""
+        response = requests.get("{0}/info".format(self._url))
+        response.raise_for_status()
+        info = json.loads(response.text)
+        assert 'version' in info
