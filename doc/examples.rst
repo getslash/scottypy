@@ -9,7 +9,7 @@ Downloading Slash log files
 .. code-block:: python
 
     from subprocess import check_call
-    from scotty import Scotty
+    from scottypy import Scotty
 
 
     s = Scotty()

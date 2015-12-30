@@ -3,16 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Scotty's documentation!
+Welcome to Scottypy's documentation!
 ==================================
 
-.. autoclass:: scotty.Scotty
+.. autoclass:: scottypy.Scotty
     :members:
 
-.. autoclass:: scotty.scotty.Beam
+.. autoclass:: scottypy.scotty.Beam
     :members:
 
-.. autoclass:: scotty.scotty.File
+.. autoclass:: scottypy.scotty.File
     :members:
 
 Contents:

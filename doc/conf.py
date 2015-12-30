@@ -18,7 +18,7 @@ import shlex
 import functools
 
 _in_same_dir = functools.partial(os.path.join, os.path.dirname(__file__))
-with open(_in_same_dir("..", "scotty", "__version__.py")) as version_file:
+with open(_in_same_dir("..", "scottypy", "__version__.py")) as version_file:
     exec(version_file.read())  # pylint: disable=W0122
 
 
@@ -55,7 +55,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Scotty'
+project = u'Scottypy'
 copyright = u'2015, Roey Darwish Dror'
 author = u'Roey Darwish Dror'
 
@@ -234,7 +234,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'Scotty.tex', u'Scotty Documentation',
+  (master_doc, 'Scotty.tex', u'Scottypy Documentation',
    u'Roey Darwish Dror', 'manual'),
 ]
 
@@ -264,7 +264,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'scotty', u'Scotty Documentation',
+    (master_doc, 'scottypy', u'Scottypy Documentation',
      [author], 1)
 ]
 
