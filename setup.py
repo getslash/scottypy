@@ -25,7 +25,7 @@ setup(name="scottypy",
       license="BSD",
       author="Roey Darwish Dror",
       author_email="roey.ghost@gmail.com",
-      url="http://git.infinidat.com/roeyd/scotty-python",
+      url="https://github.com/getslash/scottypy",
       version=__version__,  # pylint: disable=E0602
       packages=find_packages(exclude=["tests"]),
       install_requires=install_requires,
