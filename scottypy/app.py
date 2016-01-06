@@ -36,7 +36,9 @@ def main():
 def _get_url():
     config = _get_config()
     if not config or 'url' not in config:
-        raise click.ClickException("Either specify --url or run \"scotty set_url [url]\"")
+        raise click.ClickException(
+            """The URL of Scotty has not been set.
+You can set the URL either by using the --url flag or by running \"scotty set_url http://some.scotty.com\"""")
     return config['url']
 
 
