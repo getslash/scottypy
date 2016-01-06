@@ -68,7 +68,7 @@ def link(beam_id, url, storage_base, name):
 @click.option('--url', default=_get_url, help='Base URL of Scotty')
 @click.option('-f', '--filter', default=None, help="Download only files that contain the given string in their name (case insensetive)")
 @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing files on the disk')
-def down(beam_id, dest, url, overwrite, filter): # pylint: disable=W0622
+def down(beam_id, dest, url, overwrite, filter):  # pylint: disable=W0622
     scotty = Scotty(url)
 
     beam = scotty.get_beam(beam_id)
