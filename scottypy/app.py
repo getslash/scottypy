@@ -148,6 +148,19 @@ def remote(url, path, rsa_key, email, goto):
         click.echo(beam_url)
 
 
+@main.command("tag")
+@click.option("-d", "--delete", help="Delete the specified tag", is_flag=True, default=False)
+@click.option('--url', default=_get_url, help='Base URL of Scotty')
+@click.argument("tag")
+@click.argument("beam")
+def tag_beam(tag, beam, delete, url):
+    scotty = Scotty(url)
+    if delete:
+        scotty.remove_tag(beam, tag)
+    else:
+        scotty.add_tag(beam, tag)
+
+
 @main.command()
 @click.argument("url")
 def set_url(url):
