@@ -1,11 +1,11 @@
 import logging
 import sys
 import re
-import click
 import os
 import json
 import webbrowser
 from getpass import getpass
+import click
 from . import Scotty, NotOverwriting
 
 
