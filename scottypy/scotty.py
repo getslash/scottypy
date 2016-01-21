@@ -135,6 +135,20 @@ class Beam(object):
         self.size = size
         self._scotty = scotty
 
+    def update(self):
+        """Update the status of the beam object"""
+        response = self._scotty.session.get("{0}/beams/{1}".format(self._scotty.url, self.id))
+        response.raise_for_status()
+        beam_obj = response.json()['beam']
+
+        self._file_ids = beam_obj['files']
+        self.deleted = beam_obj['deleted']
+        self.completed = beam_obj['completed']
+        self.pins = beam_obj['pins']
+        self.error = beam_obj['error']
+        self.purge_time = beam_obj['purge_time']
+        self.size = beam_obj['size']
+
     @classmethod
     def from_json(cls, scotty, json_node):
         return cls(
@@ -181,6 +195,14 @@ class Scotty(object):
             'Accept-Encoding': 'gzip',
             'Content-Type': 'application/json'})
         self._session.mount(url, HTTPAdapter(max_retries=Retry(total=10, status_forcelist=[502, 504], backoff_factor=3)))
+
+    @property
+    def session(self):
+        return self._session
+
+    @property
+    def url(self):
+        return self._url
 
     def beam_up(self, directory, email=None, beam_type=None):
         """Beam up the specified local directory to Scotty.
