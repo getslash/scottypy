@@ -246,7 +246,7 @@ class Scotty(object):
 
         return beam_id
 
-    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None):
+    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -255,6 +255,7 @@ class Scotty(object):
         :param str password: Password of the username.
         :param str rsa_key: RSA private key for authentication.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
+        :param str beam_type: ID of the beam type as defined in Scotty.
 
         Either `password` or `rsa_key` should be specified, but no both.
 
@@ -269,6 +270,7 @@ class Scotty(object):
             'user': user,
             'ssh_key': rsa_key,
             'password': password,
+            'type': beam_type,
             'auth_method': 'rsa' if rsa_key else 'password'
         }
 
