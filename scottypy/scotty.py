@@ -120,7 +120,7 @@ class Beam(object):
     :ivar size: The total size of the beam in bytes.
     """
     def __init__(self, scotty, id_, file_ids, initiator_id, start, deleted, completed, pins, host, error, directory,
-                 purge_time, size):
+                 purge_time, size, comment):
         self.id = id_
         self._file_ids = file_ids
         self.initiator_id = initiator_id
@@ -134,6 +134,11 @@ class Beam(object):
         self.purge_time = purge_time
         self.size = size
         self._scotty = scotty
+        self._comment = comment
+
+    @property
+    def comment(self):
+        return self._comment
 
     def update(self):
         """Update the status of the beam object"""
@@ -148,6 +153,7 @@ class Beam(object):
         self.error = beam_obj['error']
         self.purge_time = beam_obj['purge_time']
         self.size = beam_obj['size']
+        self.comment = beam_obj['comment']
 
     @classmethod
     def from_json(cls, scotty, json_node):
@@ -164,12 +170,21 @@ class Beam(object):
             json_node['error'],
             json_node['directory'],
             json_node['purge_time'],
-            json_node['size'])
+            json_node['size'],
+            json_node['comment'])
 
     def iter_files(self):
         """Iterate the beam files, yielding :class:`.File` objects"""
         for id_ in self._file_ids:
             yield self._scotty.get_file(id_)
+
+    def set_comment(self, comment):
+        data = {'beam': {'comment': comment}}
+        response = self._scotty.session.put(
+            "{0}/beams/{1}".format(self._scotty.url, self.id),
+            data=json.dumps(data))
+        response.raise_for_status()
+        self._comment = comment
 
 
 class TempDir(object):

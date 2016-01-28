@@ -51,7 +51,8 @@ def _write_beam_info(beam, directory):
         f.write("""Start: {start}
 Host: {host}
 Directory: {directory}
-""".format(start=beam.start, host=beam.host, directory=beam.directory))
+Comment: {comment}
+""".format(start=beam.start, host=beam.host, directory=beam.directory, comment=beam.comment))
 
 
 def _link_beam(storage_base, beam, dest):
@@ -212,3 +213,15 @@ def set_url(url):
 
     config['url'] = url
     _save_config(config)
+
+
+@main.command()
+@click.argument("beam_id")
+@click.argument("comment")
+@click.option('--url', default=_get_url, help='Base URL of Scotty')
+def set_comment(beam_id, url, comment):
+    """Set a comment for the specified beam"""
+    scotty = Scotty(url)
+
+    beam = scotty.get_beam(beam_id)
+    beam.set_comment(comment)
