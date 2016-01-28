@@ -46,12 +46,22 @@ You can set the URL either by using the --url flag or by running \"scotty set_ur
     return config['url']
 
 
+def _write_beam_info(beam, directory):
+    with open(os.path.join(directory, 'beam.txt'), 'w') as f:
+        f.write("""Start: {start}
+Host: {host}
+Directory: {directory}
+""".format(start=beam.start, host=beam.host, directory=beam.directory))
+
+
 def _link_beam(storage_base, beam, dest):
     if not os.path.isdir(dest):
         os.makedirs(dest)
 
     for file_ in beam.iter_files():
         file_.link(storage_base, dest)
+
+    _write_beam_info(beam, dest)
 
     click.echo("Created a view of beam {} in {}".format(beam.id, dest))
 
@@ -98,6 +108,8 @@ def _download_beam(beam, dest, overwrite, filter):
             file_.download(dest, overwrite=overwrite)
         except NotOverwriting as e:
             click.echo("{} already exists. Use --overwrite to overwrite".format(e.file))
+
+    _write_beam_info(beam, dest)
 
     click.echo("Downloaded beam {} to directory {}".format(beam.id, dest))
 
