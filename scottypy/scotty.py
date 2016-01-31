@@ -120,7 +120,7 @@ class Beam(object):
     :ivar size: The total size of the beam in bytes.
     """
     def __init__(self, scotty, id_, file_ids, initiator_id, start, deleted, completed, pins, host, error, directory,
-                 purge_time, size):
+                 purge_time, size, comment):
         self.id = id_
         self._file_ids = file_ids
         self.initiator_id = initiator_id
@@ -134,6 +134,26 @@ class Beam(object):
         self.purge_time = purge_time
         self.size = size
         self._scotty = scotty
+        self._comment = comment
+
+    @property
+    def comment(self):
+        return self._comment
+
+    def update(self):
+        """Update the status of the beam object"""
+        response = self._scotty.session.get("{0}/beams/{1}".format(self._scotty.url, self.id))
+        response.raise_for_status()
+        beam_obj = response.json()['beam']
+
+        self._file_ids = beam_obj['files']
+        self.deleted = beam_obj['deleted']
+        self.completed = beam_obj['completed']
+        self.pins = beam_obj['pins']
+        self.error = beam_obj['error']
+        self.purge_time = beam_obj['purge_time']
+        self.size = beam_obj['size']
+        self.comment = beam_obj['comment']
 
     @classmethod
     def from_json(cls, scotty, json_node):
@@ -150,12 +170,21 @@ class Beam(object):
             json_node['error'],
             json_node['directory'],
             json_node['purge_time'],
-            json_node['size'])
+            json_node['size'],
+            json_node['comment'])
 
     def iter_files(self):
         """Iterate the beam files, yielding :class:`.File` objects"""
         for id_ in self._file_ids:
             yield self._scotty.get_file(id_)
+
+    def set_comment(self, comment):
+        data = {'beam': {'comment': comment}}
+        response = self._scotty.session.put(
+            "{0}/beams/{1}".format(self._scotty.url, self.id),
+            data=json.dumps(data))
+        response.raise_for_status()
+        self._comment = comment
 
 
 class TempDir(object):
@@ -181,6 +210,14 @@ class Scotty(object):
             'Accept-Encoding': 'gzip',
             'Content-Type': 'application/json'})
         self._session.mount(url, HTTPAdapter(max_retries=Retry(total=10, status_forcelist=[502, 504], backoff_factor=3)))
+
+    @property
+    def session(self):
+        return self._session
+
+    @property
+    def url(self):
+        return self._url
 
     def beam_up(self, directory, email=None, beam_type=None):
         """Beam up the specified local directory to Scotty.
@@ -224,7 +261,7 @@ class Scotty(object):
 
         return beam_id
 
-    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None):
+    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -233,6 +270,7 @@ class Scotty(object):
         :param str password: Password of the username.
         :param str rsa_key: RSA private key for authentication.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
+        :param str beam_type: ID of the beam type as defined in Scotty.
 
         Either `password` or `rsa_key` should be specified, but no both.
 
@@ -247,6 +285,7 @@ class Scotty(object):
             'user': user,
             'ssh_key': rsa_key,
             'password': password,
+            'type': beam_type,
             'auth_method': 'rsa' if rsa_key else 'password'
         }
 
