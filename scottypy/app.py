@@ -4,6 +4,7 @@ import re
 import os
 import json
 import webbrowser
+import capacity
 from getpass import getpass
 import click
 from . import Scotty, NotOverwriting
@@ -91,6 +92,31 @@ def link(beam_id_or_tag, url, storage_base, dest):
             dest = beam_id_or_tag
             _link_beam(storage_base, beam, dest)
 
+
+@main.command()
+@click.argument("beam_id_or_tag")
+@click.option('--url', default=_get_url, help='Base URL of Scotty')
+def show(beam_id_or_tag, url):
+    """List the files of the given beam or tag"""
+    scotty = Scotty(url)
+
+    def _list(beam):
+        print("Beam #{}".format(beam.id))
+        print("    Host: {}".format(beam.host))
+        print("    Directory: {}".format(beam.directory))
+        print("    Size: {}".format(beam.size * capacity.byte))
+        print("    Files:")
+        for file_ in beam.iter_files():
+            print("        {} ({})".format(file_.file_name, file_.size * capacity.byte))
+
+        print("")
+
+    if beam_id_or_tag.startswith('t:'):
+        tag = beam_id_or_tag[2:]
+        for beam in scotty.get_beams_by_tag(tag):
+            _list(beam)
+    else:
+        _list(scotty.get_beam(beam_id_or_tag))
 
 
 def _download_beam(beam, dest, overwrite, filter):
