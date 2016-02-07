@@ -120,7 +120,7 @@ class Beam(object):
     :ivar size: The total size of the beam in bytes.
     """
     def __init__(self, scotty, id_, file_ids, initiator_id, start, deleted, completed, pins, host, error, directory,
-                 purge_time, size, comment):
+                 purge_time, size, comment, associated_issues):
         self.id = id_
         self._file_ids = file_ids
         self.initiator_id = initiator_id
@@ -133,6 +133,7 @@ class Beam(object):
         self.directory = directory
         self.purge_time = purge_time
         self.size = size
+        self.associated_issues = associated_issues
         self._scotty = scotty
         self._comment = comment
 
@@ -152,8 +153,9 @@ class Beam(object):
         self.pins = beam_obj['pins']
         self.error = beam_obj['error']
         self.purge_time = beam_obj['purge_time']
+        self.associated_issues = beam_obj['associated_issues']
         self.size = beam_obj['size']
-        self.comment = beam_obj['comment']
+        self._comment = beam_obj['comment']
 
     @classmethod
     def from_json(cls, scotty, json_node):
@@ -171,7 +173,8 @@ class Beam(object):
             json_node['directory'],
             json_node['purge_time'],
             json_node['size'],
-            json_node['comment'])
+            json_node['comment'],
+            json_node['associated_issues'])
 
     def iter_files(self):
         """Iterate the beam files, yielding :class:`.File` objects"""
@@ -185,6 +188,11 @@ class Beam(object):
             data=json.dumps(data))
         response.raise_for_status()
         self._comment = comment
+
+    def set_issue_association(self, issue_id, associated):
+        self._scotty.session.request(
+            'POST' if associated else 'DELETE',
+            "{0}/beams/{1}/issues/{2}".format(self._scotty.url, self.id, issue_id)).raise_for_status()
 
 
 class TempDir(object):
@@ -355,3 +363,57 @@ class Scotty(object):
         response.raise_for_status()
         info = json.loads(response.text)
         assert 'version' in info
+
+    def create_tracker(self, name, tracker_type, url, config):
+        data = {
+            'tracker': {
+                'name': name,
+                'type': tracker_type,
+                'url': url,
+                'config': json.dumps(config)
+            }
+        }
+        response = self._session.post("{}/trackers".format(self._url), data=json.dumps(data))
+        response.raise_for_status()
+        return response.json()['tracker']['id']
+
+    def get_tracker_id(self, name):
+        response = self._session.get("{}/trackers/by_name/{}".format(self._url, name))
+        response.raise_for_status()
+        return response.json()['tracker']['id']
+
+    def create_issue(self, tracker_id, id_in_tracker):
+        data = {
+            'issue': {
+                'tracker_id': tracker_id,
+                'id_in_tracker': id_in_tracker,
+            }
+        }
+        response = self._session.post("{}/issues".format(self._url), data=json.dumps(data))
+        response.raise_for_status()
+        return response.json()['issue']['id']
+
+    def delete_issue(self, issue_id):
+        response = self._session.delete("{}/issues/{}".format(self._url, issue_id))
+        response.raise_for_status()
+
+    def delete_tracker(self, tracker_id):
+        response = self._session.delete("{}/trackers/{}".format(self._url, tracker_id))
+        response.raise_for_status()
+
+    def update_tracker(self, tracker_id, name=None, url=None, config=None):
+        data = {}
+
+        if name:
+            data['name'] = name
+
+        if url:
+            data['url'] = url
+
+        if config:
+            data['config'] = json.dumps(config)
+
+        response = self._session.put(
+            "{}/trackers/{}".format(self._url, tracker_id),
+            data=json.dumps({'tracker': data}))
+        response.raise_for_status()

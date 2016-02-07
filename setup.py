@@ -11,7 +11,8 @@ install_requires = [
     "emport",
     "requests",
     "python-dateutil",
-    "click"
+    "click",
+    "capacity"
 ]
 
 setup(name="scottypy",
