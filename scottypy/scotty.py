@@ -211,13 +211,15 @@ class Scotty(object):
     """Main class that communicates with Scotty.
 
     :param str url: The base URL of Scotty."""
-    def __init__(self, url):
+    def __init__(self, url, retry_times=3, backoff_factor=2):
         self._url = url
         self._session = requests.Session()
         self._session.headers.update({
             'Accept-Encoding': 'gzip',
             'Content-Type': 'application/json'})
-        self._session.mount(url, HTTPAdapter(max_retries=Retry(total=10, status_forcelist=[502, 504], backoff_factor=3)))
+        self._session.mount(
+            url, HTTPAdapter(
+                max_retries=Retry(total=retry_times, status_forcelist=[502, 504], backoff_factor=backoff_factor)))
 
     @property
     def session(self):
