@@ -1,7 +1,7 @@
 .. _examples:
 
-Examples
-========
+API usage examples
+==================
 
 Downloading Slash log files
 ---------------------------
