@@ -90,7 +90,8 @@ def link(beam_id_or_tag, url, storage_base, dest):
         beam = scotty.get_beam(beam_id_or_tag)
         if dest is None:
             dest = beam_id_or_tag
-            _link_beam(storage_base, beam, dest)
+
+        _link_beam(storage_base, beam, dest)
 
 
 @main.command()

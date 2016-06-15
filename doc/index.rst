@@ -6,20 +6,13 @@
 Welcome to Scottypy's documentation!
 ==================================
 
-.. autoclass:: scottypy.Scotty
-    :members:
-
-.. autoclass:: scottypy.scotty.Beam
-    :members:
-
-.. autoclass:: scottypy.scotty.File
-    :members:
-
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
+   cli
+   reference
    examples
 
 Indices and tables

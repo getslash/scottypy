@@ -1,7 +1,7 @@
 .. _examples:
 
-Examples
-========
+API usage examples
+==================
 
 Downloading Slash log files
 ---------------------------
@@ -12,7 +12,7 @@ Downloading Slash log files
     from scottypy import Scotty
 
 
-    s = Scotty()
+    s = Scotty("http://somescotty.somedomain.com")
     beams = s.get_beams_by_tag("be3523fe-fe19-11e4-9be2-00505699a8d9_0")
     for beam in beams:
         for file in beam.iter_files():
