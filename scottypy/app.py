@@ -192,21 +192,24 @@ def local(directory, url):
 @click.option("--email")
 @click.option("--goto", is_flag=True, default=False, help="Open your browser at the beam page")
 @click.option('--url', default=_get_url, help='Base URL of Scotty')
-def remote(url, path, rsa_key, email, goto):
+@click.option("--stored_key", default=None)
+def remote(url, path, rsa_key, email, goto, stored_key):
     scotty = Scotty(url)
 
     m = _BEAM_PATH.search(path)
     if not m:
         raise click.ClickException("Invalid path. Path should be in the form of user@host:/path/to/directory")
 
+    password = None
     user, host, directory = m.groups()
     if rsa_key:
         with open(rsa_key, "r") as f:
             rsa_key = f.read()
-        password = None
+    elif stored_key:
+        pass
     else:
         password = getpass("Password for {}@{}: ".format(user, host))
-    beam_id = scotty.initiate_beam(user, host, directory, password, rsa_key, email)
+    beam_id = scotty.initiate_beam(user, host, directory, password, rsa_key, email, stored_key=stored_key)
     click.echo("Successfully initiated beam #{} to {}@{}:{}".format(
         beam_id, user, host, directory))
 

@@ -271,7 +271,7 @@ class Scotty(object):
 
         return beam_id
 
-    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None):
+    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None, stored_key=None):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -281,12 +281,22 @@ class Scotty(object):
         :param str rsa_key: RSA private key for authentication.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :param str beam_type: ID of the beam type as defined in Scotty.
+        :param str stored_key: An ID of a key stored in Scotty.
 
-        Either `password` or `rsa_key` should be specified, but no both.
+        Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
         :return: the beam id."""
-        if (password and rsa_key) or not (password or rsa_key):
-            raise Exception("Either password or rsa_key should be specified")
+        if len([x for x in (password, rsa_key, stored_key) if x]) != 1:
+            raise Exception("Either password, rsa_key or stored_key should be specified")
+
+        if rsa_key:
+            auth_method = 'rsa'
+        elif password:
+            auth_method = 'password'
+        elif stored_key:
+            auth_method = 'stored_key'
+        else:
+            raise Exception()
 
 
         beam = {
@@ -294,9 +304,10 @@ class Scotty(object):
             'host': host,
             'user': user,
             'ssh_key': rsa_key,
+            'stored_key': stored_key,
             'password': password,
             'type': beam_type,
-            'auth_method': 'rsa' if rsa_key else 'password'
+            'auth_method': auth_method
         }
 
         if email:
