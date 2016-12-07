@@ -177,9 +177,17 @@ class Beam(object):
             json_node['associated_issues'])
 
     def iter_files(self):
-        """Iterate the beam files, yielding :class:`.File` objects"""
+        """Iterate the beam files one by one, yielding :class:`.File` objects
+        This function might be slow when used with beams containing large number
+        of file. Consider using :func:`.get_files` instead."""
         for id_ in self._file_ids:
             yield self._scotty.get_file(id_)
+
+    def get_files(self, filter_=None):
+        """Get a list of :class:`.File` instances representing the beam files.
+
+        :ivar filter_: Optional filter string. When given, only files which their name contains the filter will be returned."""
+        return self._scotty.get_files(self.id, filter_)
 
     def set_comment(self, comment):
         data = {'beam': {'comment': comment}}
@@ -345,6 +353,13 @@ class Scotty(object):
 
         json_response = response.json()
         return Beam.from_json(self, json_response['beam'])
+
+    def get_files(self, beam_id, filter_):
+        response = self._session.get(
+            "{0}/files".format(self._url),
+            params={"beam_id": beam_id, "filter": filter_})
+        response.raise_for_status()
+        return [File.from_json(self._session, f) for f in response.json()['files']]
 
     def get_file(self, file_id):
         """Retrieve details about the specified file.

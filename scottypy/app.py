@@ -60,7 +60,7 @@ def _link_beam(storage_base, beam, dest):
     if not os.path.isdir(dest):
         os.makedirs(dest)
 
-    for file_ in beam.iter_files():
+    for file_ in beam.get_files():
         file_.link(storage_base, dest)
 
     _write_beam_info(beam, dest)
@@ -107,7 +107,7 @@ def show(beam_id_or_tag, url):
         print("    Directory: {}".format(beam.directory))
         print("    Size: {}".format(beam.size * capacity.byte))
         print("    Files:")
-        for file_ in beam.iter_files():
+        for file_ in beam.get_files():
             print("        {} ({})".format(file_.file_name, file_.size * capacity.byte))
 
         print("")
@@ -126,11 +126,7 @@ def _download_beam(beam, dest, overwrite, filter):
 
     click.echo("Downloading beam {} to directory {}".format(beam.id, dest))
 
-    for file_ in beam.iter_files():
-        if filter is not None and filter not in file_.file_name:
-            click.echo("Skipping {}".format(file_.file_name))
-            continue
-
+    for file_ in beam.get_files(filter_=filter):
         click.echo("Downloading {}".format(file_.file_name))
         try:
             file_.download(dest, overwrite=overwrite)
