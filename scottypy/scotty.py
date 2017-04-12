@@ -233,6 +233,9 @@ class Scotty(object):
     def session(self):
         return self._session
 
+    def __del__(self):
+        self._session.close()
+
     @property
     def url(self):
         return self._url
