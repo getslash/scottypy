@@ -1,21 +1,22 @@
+import dateutil.parser
+import emport
+import json
 import os
 import requests
-import json
+import shutil
 import socket
 import tempfile
-import shutil
-import emport
-import dateutil.parser
+import logging
 from datetime import datetime
-from logging import getLogger
-from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
-
+from requests.packages.urllib3.util.retry import Retry
+from tempfile import NamedTemporaryFile
 
 _CHUNK_SIZE = 1024 ** 2 * 4
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
-logger = getLogger("scotty")
+logger = logging.getLogger("scotty") # type: logging.Logger
+
 
 epoch = datetime.utcfromtimestamp(0)
 def _to_epoch(d):
@@ -228,6 +229,26 @@ class Scotty(object):
         self._session.mount(
             url, HTTPAdapter(
                 max_retries=Retry(total=retry_times, status_forcelist=[502, 504], backoff_factor=backoff_factor)))
+        self._combadge = None
+
+    def prefetch_combadge(self):
+        """Prefetch the combadge to a temporary file. Future beams will use that combadge
+        instead of having to re-download it."""
+        self._combadge = self._get_combadge()
+
+    def _get_combadge(self):
+        """Get the combadge from the memory if it has been prefetched. Otherwise, download
+        it from Scotty"""
+        if self._combadge:
+            return self._combadge
+
+        logger.critical("Fetching combadge")
+        with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
+            response = self._session.get("{0}/static/assets/combadge.py".format(self._url))
+            response.raise_for_status()
+            combadge_file.write(response.text)
+            combadge_file.flush()
+            return emport.import_file(combadge_file.name)
 
     @property
     def session(self):
@@ -269,16 +290,7 @@ class Scotty(object):
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
 
-        response = self._session.get("{0}/static/assets/combadge.py".format(self._url))
-        response.raise_for_status()
-
-        with TempDir() as work_dir:
-            combadge_path = os.path.join(work_dir, 'combadge.py')
-            with open(combadge_path, 'w') as f:
-                f.write(response.text)
-
-            combadge = emport.import_file(combadge_path)
-            combadge.beam_up(beam_id, directory, transporter_host)
+        self._get_combadge().beam_up(beam_id, directory, transporter_host)
 
         return beam_id
 
