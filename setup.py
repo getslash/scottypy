@@ -32,9 +32,6 @@ setup(name="scottypy",
       install_requires=install_requires,
       entry_points=dict(
           console_scripts=[
-              "beamup  = scottypy.app:obsolete_command",
-              "beamdown  = scottypy.app:obsolete_command",
-              "beamlink  = scottypy.app:obsolete_command",
               "scotty  = scottypy.app:main",
           ]
       ),

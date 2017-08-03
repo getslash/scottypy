@@ -1,5 +1,4 @@
 import logging
-import sys
 import re
 import os
 import json
@@ -12,12 +11,6 @@ from . import Scotty, NotOverwriting
 
 _CONFIG_PATH = os.path.expanduser("~/.scotty.conf")
 _BEAM_PATH = re.compile(r"^([^@:]+)@([^@:]+):(.*)$")
-
-
-def obsolete_command():
-    subcommand = os.path.basename(sys.argv[0])[4:]
-    print("beam{0} is obsolete. Run \"scotty {0}\" instead".format(subcommand))
-    return 0
 
 
 def _get_config():
