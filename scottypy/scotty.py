@@ -242,7 +242,6 @@ class Scotty(object):
         if self._combadge:
             return self._combadge
 
-        logger.critical("Fetching combadge")
         with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
             response = self._session.get("{0}/static/assets/combadge.py".format(self._url))
             response.raise_for_status()
