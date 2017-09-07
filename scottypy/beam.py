@@ -60,7 +60,7 @@ class Beam(object):
         return cls(
             scotty,
             json_node['id'],
-            json_node['files'],
+            json_node.get('files', []),
             json_node['initiator'],
             dateutil.parser.parse(json_node['start']),
             json_node['deleted'],

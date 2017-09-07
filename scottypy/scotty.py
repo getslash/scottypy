@@ -61,12 +61,14 @@ class Scotty(object):
     def url(self):
         return self._url
 
-    def beam_up(self, directory, email=None, beam_type=None, tags=None):
+    def beam_up(self, directory, email=None, beam_type=None, tags=None, return_beam_object=False):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :param list tags: An optional list of tags to be associated with the beam.
+        :param bool return_beam_object: If set to True, return a :class:`.Beam` instance.
+
         :return: the beam id."""
         if not os.path.exists(directory):
             raise PathNotExists(directory)
@@ -96,10 +98,13 @@ class Scotty(object):
 
         self._get_combadge().beam_up(beam_id, directory, transporter_host)
 
-        return beam_id
+        if return_beam_object:
+            return Beam.from_json(self, beam_data['beam'])
+        else:
+            return beam_data['beam']['id']
 
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
-                      stored_key=None, tags=None):
+                      stored_key=None, tags=None, return_beam_object=False):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -111,6 +116,7 @@ class Scotty(object):
         :param str beam_type: ID of the beam type as defined in Scotty.
         :param str stored_key: An ID of a key stored in Scotty.
         :param list tags: An optional list of tags to be associated with the beam.
+        :param bool return_beam_object: If set to True, return a :class:`.Beam` instance.
 
         Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
@@ -149,7 +155,11 @@ class Scotty(object):
         response.raise_for_status()
 
         beam_data = response.json()
-        return beam_data['beam']['id']
+
+        if return_beam_object:
+            return Beam.from_json(self, beam_data['beam'])
+        else:
+            return beam_data['beam']['id']
 
     def add_tag(self, beam_id, tag):
         """Add the specified tag on the specified beam id.
