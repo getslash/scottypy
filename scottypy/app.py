@@ -166,13 +166,15 @@ def up():
 @up.command()
 @click.argument("directory")
 @click.option('--url', default=_get_url, help='Base URL of Scotty')
-def local(directory, url):
+@click.option('-t', '--tag', 'tags', multiple=True,
+              help='Tag to be associated with the beam. Can be specified multiple times')
+def local(directory, url, tags):
     logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s', level=logging.DEBUG)
 
     scotty = Scotty(url)
 
     click.echo('Beaming up {}'.format(directory))
-    beam_id = scotty.beam_up(directory)
+    beam_id = scotty.beam_up(directory, tags=tags)
     click.echo('Successfully beamed beam #{}'.format(beam_id))
 
 
@@ -183,7 +185,9 @@ def local(directory, url):
 @click.option("--goto", is_flag=True, default=False, help="Open your browser at the beam page")
 @click.option('--url', default=_get_url, help='Base URL of Scotty')
 @click.option("--stored_key", default=None)
-def remote(url, path, rsa_key, email, goto, stored_key):
+@click.option('-t', '--tag', 'tags', multiple=True,
+              help='Tag to be associated with the beam. Can be specified multiple times')
+def remote(url, path, rsa_key, email, goto, stored_key, tags):
     scotty = Scotty(url)
 
     m = _BEAM_PATH.search(path)
@@ -199,7 +203,7 @@ def remote(url, path, rsa_key, email, goto, stored_key):
         pass
     else:
         password = getpass("Password for {}@{}: ".format(user, host))
-    beam_id = scotty.initiate_beam(user, host, directory, password, rsa_key, email, stored_key=stored_key)
+    beam_id = scotty.initiate_beam(user, host, directory, password, rsa_key, email, stored_key=stored_key, tags=tags)
     click.echo("Successfully initiated beam #{} to {}@{}:{}".format(
         beam_id, user, host, directory))
 

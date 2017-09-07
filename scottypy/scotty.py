@@ -61,11 +61,12 @@ class Scotty(object):
     def url(self):
         return self._url
 
-    def beam_up(self, directory, email=None, beam_type=None):
+    def beam_up(self, directory, email=None, beam_type=None, tags=None):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
+        :param list tags: An optional list of tags to be associated with the beam.
         :return: the beam id."""
         if not os.path.exists(directory):
             raise PathNotExists(directory)
@@ -84,6 +85,9 @@ class Scotty(object):
         if email:
             beam['email'] = email
 
+        if tags:
+            beam['tags'] = tags
+
         response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
         response.raise_for_status()
 
@@ -94,7 +98,8 @@ class Scotty(object):
 
         return beam_id
 
-    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None, stored_key=None):
+    def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
+                      stored_key=None, tags=None):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -105,6 +110,7 @@ class Scotty(object):
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :param str beam_type: ID of the beam type as defined in Scotty.
         :param str stored_key: An ID of a key stored in Scotty.
+        :param list tags: An optional list of tags to be associated with the beam.
 
         Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
@@ -132,6 +138,9 @@ class Scotty(object):
             'type': beam_type,
             'auth_method': auth_method
         }
+
+        if tags:
+            beam['tags'] = tags
 
         if email:
             beam['email'] = email
