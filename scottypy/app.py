@@ -203,7 +203,7 @@ def remote(url, path, rsa_key, email, goto, stored_key):
     click.echo("Successfully initiated beam #{} to {}@{}:{}".format(
         beam_id, user, host, directory))
 
-    beam_url = "{}/#/beam/{}".format(url, beam_id)
+    beam_url = "{}/#/beams/{}".format(url, beam_id)
     if goto:
         webbrowser.open(beam_url)
     else:
