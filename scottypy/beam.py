@@ -1,5 +1,6 @@
-import json
 import dateutil.parser
+import json
+from pact import Pact
 
 
 class Beam(object):
@@ -99,3 +100,13 @@ class Beam(object):
         self._scotty.session.request(
             'POST' if associated else 'DELETE',
             "{0}/beams/{1}/issues/{2}".format(self._scotty.url, self.id, issue_id)).raise_for_status()
+
+    def _check_finish(self):
+        self.update()
+        return self.completed
+
+    def get_pact(self):
+        """Get a Pact instance. The pact is finished when the beam has been completed"""
+        pact = Pact("Waiting for beam {}".format(self.id))
+        pact.until(self._check_finish)
+        return pact

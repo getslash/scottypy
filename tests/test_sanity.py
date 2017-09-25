@@ -37,7 +37,10 @@ def test_sanity(scotty, beam_function, email):
     assert beam_id in [b.id for b in scotty.get_beams_by_tag('tag/with/slashes')]
     scotty.remove_tag(beam_id, 'tag/with/slashes')
     assert beam_id not in [b.id for b in scotty.get_beams_by_tag('tag/with/slashes')]
-    scotty.get_beam(beam_id)
+    beam = scotty.get_beam(beam_id)
+    pact = beam.get_pact()
+    pact.wait()
+    assert beam.completed
 
 
 def test_single_file(scotty, tempdir):

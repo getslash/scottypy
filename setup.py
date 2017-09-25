@@ -1,18 +1,18 @@
 from setuptools import setup, find_packages
 import functools
 import os
-import platform
 
 _in_same_dir = functools.partial(os.path.join, os.path.dirname(__file__))
 with open(_in_same_dir("scottypy", "__version__.py")) as version_file:
     exec(version_file.read())  # pylint: disable=W0122
 
 install_requires = [
-    "emport",
-    "requests",
-    "python-dateutil",
+    "capacity",
     "click",
-    "capacity"
+    "emport",
+    "python-dateutil",
+    "requests",
+    "pact"
 ]
 
 setup(name="scottypy",
