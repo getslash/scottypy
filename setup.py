@@ -1,18 +1,18 @@
 from setuptools import setup, find_packages
 import functools
 import os
-import platform
 
 _in_same_dir = functools.partial(os.path.join, os.path.dirname(__file__))
 with open(_in_same_dir("scottypy", "__version__.py")) as version_file:
     exec(version_file.read())  # pylint: disable=W0122
 
 install_requires = [
-    "emport",
-    "requests",
-    "python-dateutil",
+    "capacity",
     "click",
-    "capacity"
+    "emport",
+    "python-dateutil",
+    "requests",
+    "pact"
 ]
 
 setup(name="scottypy",
@@ -32,9 +32,6 @@ setup(name="scottypy",
       install_requires=install_requires,
       entry_points=dict(
           console_scripts=[
-              "beamup  = scottypy.app:obsolete_command",
-              "beamdown  = scottypy.app:obsolete_command",
-              "beamlink  = scottypy.app:obsolete_command",
               "scotty  = scottypy.app:main",
           ]
       ),
