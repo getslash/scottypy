@@ -1,7 +1,7 @@
 import tempfile
 import shutil
 from slash import fixture
-from scotty import Scotty
+from scottypy import Scotty
 
 
 @fixture
