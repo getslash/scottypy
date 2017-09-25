@@ -1,8 +1,7 @@
 import os
 import gzip
-from requests import HTTPError
 from contextlib import closing
-from slash import parametrize, assert_raises
+from slash import parametrize
 
 
 _LOG = """I can see what you see not
