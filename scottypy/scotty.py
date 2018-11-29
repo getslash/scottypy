@@ -72,13 +72,14 @@ class Scotty(object):
         :return: the beam id."""
         if not os.path.exists(directory):
             raise PathNotExists(directory)
+        directory = os.path.abspath(directory)
 
         response = self._session.get("{0}/info".format(self._url))
         response.raise_for_status()
         transporter_host = response.json()['transporter']
 
         beam = {
-            'directory': os.path.abspath(directory),
+            'directory': directory,
             'host': socket.gethostname(),
             'auth_method': 'independent',
             'type': beam_type
