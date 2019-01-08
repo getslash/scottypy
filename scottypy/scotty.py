@@ -14,13 +14,15 @@ from .exc import PathNotExists
 
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
-logger = logging.getLogger("scotty") # type: logging.Logger
+_TIMEOUT = 5
+logger = logging.getLogger("scotty")  # type: logging.Logger
 
 
 class Scotty(object):
     """Main class that communicates with Scotty.
 
     :param str url: The base URL of Scotty."""
+
     def __init__(self, url, retry_times=3, backoff_factor=2):
         self._url = url
         self._session = requests.Session()
@@ -44,7 +46,7 @@ class Scotty(object):
             return self._combadge
 
         with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
-            response = self._session.get("{0}/static/assets/combadge.py".format(self._url))
+            response = self._session.get("{0}/static/assets/combadge.py".format(self._url), timeout=_TIMEOUT)
             response.raise_for_status()
             combadge_file.write(response.text)
             combadge_file.flush()
@@ -74,7 +76,7 @@ class Scotty(object):
             raise PathNotExists(directory)
         directory = os.path.abspath(directory)
 
-        response = self._session.get("{0}/info".format(self._url))
+        response = self._session.get("{0}/info".format(self._url), timeout=_TIMEOUT)
         response.raise_for_status()
         transporter_host = response.json()['transporter']
 
@@ -91,7 +93,7 @@ class Scotty(object):
         if tags:
             beam['tags'] = tags
 
-        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
+        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
         response.raise_for_status()
 
         beam_data = response.json()
@@ -134,7 +136,6 @@ class Scotty(object):
         else:
             raise Exception()
 
-
         beam = {
             'directory': os.path.abspath(directory),
             'host': host,
@@ -152,7 +153,7 @@ class Scotty(object):
         if email:
             beam['email'] = email
 
-        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}))
+        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
         response.raise_for_status()
 
         beam_data = response.json()
@@ -167,7 +168,7 @@ class Scotty(object):
 
         :param int beam_id: Beam ID.
         :param str tag: Tag name."""
-        response = self._session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
+        response = self._session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag), timeout=_TIMEOUT)
         response.raise_for_status()
 
     def remove_tag(self, beam_id, tag):
@@ -175,7 +176,7 @@ class Scotty(object):
 
         :param int beam_id: Beam ID.
         :param str tag: Tag name."""
-        response = self._session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag))
+        response = self._session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag), timeout=_TIMEOUT)
         response.raise_for_status()
 
     def get_beam(self, beam_id):
@@ -183,7 +184,7 @@ class Scotty(object):
 
         :param int beam_id: Beam ID.
         :rtype: :class:`.Beam`"""
-        response = self._session.get("{0}/beams/{1}".format(self._url, beam_id))
+        response = self._session.get("{0}/beams/{1}".format(self._url, beam_id), timeout=_TIMEOUT)
         response.raise_for_status()
 
         json_response = response.json()
@@ -192,7 +193,8 @@ class Scotty(object):
     def get_files(self, beam_id, filter_):
         response = self._session.get(
             "{0}/files".format(self._url),
-            params={"beam_id": beam_id, "filter": filter_})
+            params={"beam_id": beam_id, "filter": filter_},
+            timeout=_TIMEOUT)
         response.raise_for_status()
         return [File.from_json(self._session, f) for f in response.json()['files']]
 
@@ -201,7 +203,7 @@ class Scotty(object):
 
         :param int file_id: File ID.
         :rtype: :class:`.File`"""
-        response = self._session.get("{0}/files/{1}".format(self._url, file_id))
+        response = self._session.get("{0}/files/{1}".format(self._url, file_id), timeout=_TIMEOUT)
         response.raise_for_status()
 
         json_response = response.json()
@@ -214,7 +216,7 @@ class Scotty(object):
         :return: a list of :class:`.Beam` objects.
         """
 
-        response = self._session.get("{0}/beams?tag={1}".format(self._url, tag))
+        response = self._session.get("{0}/beams?tag={1}".format(self._url, tag), timeout=_TIMEOUT)
         response.raise_for_status()
 
         ids = (b['id'] for b in response.json()['beams'])
@@ -236,12 +238,12 @@ class Scotty(object):
                 'config': json.dumps(config)
             }
         }
-        response = self._session.post("{}/trackers".format(self._url), data=json.dumps(data))
+        response = self._session.post("{}/trackers".format(self._url), data=json.dumps(data), timeout=_TIMEOUT)
         response.raise_for_status()
         return response.json()['tracker']['id']
 
     def get_tracker_id(self, name):
-        response = self._session.get("{}/trackers/by_name/{}".format(self._url, name))
+        response = self._session.get("{}/trackers/by_name/{}".format(self._url, name), timeout=_TIMEOUT)
         response.raise_for_status()
         return response.json()['tracker']['id']
 
@@ -252,16 +254,16 @@ class Scotty(object):
                 'id_in_tracker': id_in_tracker,
             }
         }
-        response = self._session.post("{}/issues".format(self._url), data=json.dumps(data))
+        response = self._session.post("{}/issues".format(self._url), data=json.dumps(data), timeout=_TIMEOUT)
         response.raise_for_status()
         return response.json()['issue']['id']
 
     def delete_issue(self, issue_id):
-        response = self._session.delete("{}/issues/{}".format(self._url, issue_id))
+        response = self._session.delete("{}/issues/{}".format(self._url, issue_id), timeout=_TIMEOUT)
         response.raise_for_status()
 
     def delete_tracker(self, tracker_id):
-        response = self._session.delete("{}/trackers/{}".format(self._url, tracker_id))
+        response = self._session.delete("{}/trackers/{}".format(self._url, tracker_id), timeout=_TIMEOUT)
         response.raise_for_status()
 
     def update_tracker(self, tracker_id, name=None, url=None, config=None):
@@ -278,5 +280,6 @@ class Scotty(object):
 
         response = self._session.put(
             "{}/trackers/{}".format(self._url, tracker_id),
-            data=json.dumps({'tracker': data}))
+            data=json.dumps({'tracker': data}),
+            timeout=_TIMEOUT)
         response.raise_for_status()

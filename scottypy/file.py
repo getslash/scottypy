@@ -4,12 +4,11 @@ from datetime import datetime
 from .exc import NotOverwriting
 
 _CHUNK_SIZE = 1024 ** 2 * 4
-
-
 _EPOCH = datetime.utcfromtimestamp(0)
+
+
 def _to_epoch(d):
     return (d - _EPOCH.replace(tzinfo=d.tzinfo)).total_seconds()
-
 
 
 class File(object):
@@ -21,6 +20,7 @@ class File(object):
     :ivar storage_name: The file name in Scotty's file system.
     :ivar size: The size of the file in bytes.
     :ivar url: A URL for downloading the file."""
+
     def __init__(self, session, id_, file_name, status, storage_name, size, url, mtime):
 
         self.id = id_
