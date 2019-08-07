@@ -46,7 +46,7 @@ class Scotty(object):
             return self._combadge
 
         with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
-            response = self._session.get("{0}/static/assets/combadge.py".format(self._url), timeout=_TIMEOUT)
+            response = self._session.get("{0}/combadge".format(self._url), timeout=_TIMEOUT)
             response.raise_for_status()
             combadge_file.write(response.text)
             combadge_file.flush()
@@ -242,6 +242,14 @@ class Scotty(object):
         response.raise_for_status()
         return response.json()['tracker']['id']
 
+    def get_tracker_by_name(self, name):
+        try:
+            response = self._session.get("{}/trackers/by_name/{}".format(self._url, name), timeout=_TIMEOUT)
+            response.raise_for_status()
+            return response.json()['tracker']
+        except requests.exceptions.HTTPError:
+            return None
+
     def get_tracker_id(self, name):
         response = self._session.get("{}/trackers/by_name/{}".format(self._url, name), timeout=_TIMEOUT)
         response.raise_for_status()
@@ -261,6 +269,18 @@ class Scotty(object):
     def delete_issue(self, issue_id):
         response = self._session.delete("{}/issues/{}".format(self._url, issue_id), timeout=_TIMEOUT)
         response.raise_for_status()
+
+    def get_issue_by_tracker(self, tracker_id, id_in_tracker):
+        params = {
+            'tracker_id': tracker_id,
+            'id_in_tracker': id_in_tracker,
+        }
+        response = self._session.get("{}/issues/get_by_tracker".format(self._url), params=params, timeout=_TIMEOUT)
+        try:
+            response.raise_for_status()
+            return response.json()['issue']
+        except requests.exceptions.HTTPError:
+            return None
 
     def delete_tracker(self, tracker_id):
         response = self._session.delete("{}/trackers/{}".format(self._url, tracker_id), timeout=_TIMEOUT)
