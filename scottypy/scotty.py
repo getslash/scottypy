@@ -1,8 +1,11 @@
 import emport
+import errno
 import json
 import os
 import requests
+import stat
 import socket
+import subprocess
 import logging
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -33,24 +36,50 @@ class Scotty(object):
             url, HTTPAdapter(
                 max_retries=Retry(total=retry_times, status_forcelist=[502, 504], backoff_factor=backoff_factor)))
         self._combadge = None
+        self._combadge_type = None
 
-    def prefetch_combadge(self):
+    def prefetch_combadge(self, combadge_type='python'):
         """Prefetch the combadge to a temporary file. Future beams will use that combadge
         instead of having to re-download it."""
-        self._combadge = self._get_combadge()
+        self._combadge = self._get_combadge(combadge_type=combadge_type)
 
-    def _get_combadge(self):
+    def remove_combadge(self):
+        if self._combadge_type == 'rust':
+            try:
+                os.remove(self._combadge)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+        self._combadge_type = None
+
+    def _get_combadge(self, combadge_type):
         """Get the combadge from the memory if it has been prefetched. Otherwise, download
         it from Scotty"""
         if self._combadge:
             return self._combadge
 
-        with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
-            response = self._session.get("{0}/combadge".format(self._url), timeout=_TIMEOUT)
-            response.raise_for_status()
-            combadge_file.write(response.text)
-            combadge_file.flush()
-            return emport.import_file(combadge_file.name)
+        self._combadge_type = combadge_type
+
+        if combadge_type == 'python':
+            with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
+                response = self._session.get("{}/combadge".format(self._url), timeout=_TIMEOUT)
+                response.raise_for_status()
+                combadge_file.write(response.text)
+                combadge_file.flush()
+                return emport.import_file(combadge_file.name)
+
+        elif combadge_type == 'rust':
+            with open('/tmp/combadge', 'wb') as combadge_file:
+                response = self._session.get("{}/combadge?combadge_type=rust".format(self._url), timeout=_TIMEOUT)
+                response.raise_for_status()
+                for chunk in response.iter_content(chunk_size=1024):
+                    combadge_file.write(chunk)
+                st = os.stat('/tmp/combadge')
+                os.chmod('/tmp/combadge', st.st_mode | stat.S_IEXEC)
+                return combadge_file.name
+
+        else:
+            raise Exception("Wrong combadge type")
 
     @property
     def session(self):
@@ -63,7 +92,7 @@ class Scotty(object):
     def url(self):
         return self._url
 
-    def beam_up(self, directory, email=None, beam_type=None, tags=None, return_beam_object=False):
+    def beam_up(self, directory, combadge_type=None, email=None, beam_type=None, tags=None, return_beam_object=False):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
@@ -76,7 +105,7 @@ class Scotty(object):
             raise PathNotExists(directory)
         directory = os.path.abspath(directory)
 
-        response = self._session.get("{0}/info".format(self._url), timeout=_TIMEOUT)
+        response = self._session.get("{}/info".format(self._url), timeout=_TIMEOUT)
         response.raise_for_status()
         transporter_host = response.json()['transporter']
 
@@ -93,13 +122,23 @@ class Scotty(object):
         if tags:
             beam['tags'] = tags
 
-        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
+        response = self._session.post("{}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
         response.raise_for_status()
 
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
 
-        self._get_combadge().beam_up(beam_id, directory, transporter_host)
+        if combadge_type is not None and self._combadge_type is not None and combadge_type != self._combadge_type:
+            raise Exception("Mismatching combadge types: beam_up received combadge_type={} but scotty._combadge_type={}"
+                            .format(combadge_type, self._combadge_type))
+        combadge_type = combadge_type or self._combadge_type
+        combadge = self._get_combadge(combadge_type)
+        if combadge_type == 'python':
+            combadge.beam_up(beam_id, directory, transporter_host)
+        elif combadge_type == 'rust':
+            subprocess.run([combadge, '-b', beam_id, '-p', directory, '-t', transporter_host], check=False, capture_output=True)
+        else:
+            raise Exception("Wrong combadge type")
 
         if return_beam_object:
             return Beam.from_json(self, beam_data['beam'])
