@@ -66,15 +66,14 @@ class File(object):
             mtime,
         )
 
-    def stream_to(self, fileobj: "typing.BinaryIO") -> None:
+    async def stream_to(self, fileobj: "typing.BinaryIO") -> None:
         """Fetch the file content from the server and write it to fileobj"""
-        response = self._session.get(self.url, stream=True)
-        raise_for_status(response)
+        async with self._session.get(self.url, stream=True) as response:
+            response.raise_for_status()
+            for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
+                fileobj.write(chunk)
 
-        for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
-            fileobj.write(chunk)
-
-    def download(self, directory: str = ".", overwrite: bool = False) -> None:
+    async def download(self, directory: str = ".", overwrite: bool = False) -> None:
         """Download the file to the specified directory, retaining its name"""
         subdir, file_ = os.path.split(fix_path_sep_for_current_platform(self.file_name))
         subdir = os.path.join(directory, subdir)
@@ -89,8 +88,8 @@ class File(object):
         if os.path.isfile(file_) and not overwrite:
             raise NotOverwriting(file_)
 
-        with open(file_, "wb") as f:
-            self.stream_to(f)
+        async with open(file_, "wb") as f:
+            await self.stream_to(f)
 
         if self.mtime is not None:
             mtime = _to_epoch(self.mtime)

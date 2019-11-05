@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import asyncio
 import json
 import logging
 import os
@@ -135,18 +136,21 @@ def show(beam_id_or_tag: str, url: str) -> None:
         _list(scotty.get_beam(beam_id_or_tag))
 
 
-def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) -> None:
+async def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) -> None:
     if not os.path.isdir(dest):
         os.makedirs(dest)
 
     click.echo("Downloading beam {} to directory {}".format(beam.id, dest))
 
+    tasks = []
     for file_ in beam.get_files(filter_=filter):
         click.echo("Downloading {}".format(file_.file_name))
         try:
-            file_.download(dest, overwrite=overwrite)
+            task = asyncio.ensure_future(file_.download(dest, overwrite=overwrite))
+            tasks.append(task)
         except NotOverwriting as e:
             click.echo("{} already exists. Use --overwrite to overwrite".format(e.file))
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     _write_beam_info(beam, dest)
 
@@ -178,16 +182,14 @@ def down(
 
     if beam_id_or_tag.startswith("t:"):
         tag = beam_id_or_tag[2:]
-        if dest is None:
-            dest = tag
+        dest = dest or tag
 
         for beam in scotty.get_beams_by_tag(tag):
-            _download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter)
+            asyncio.get_event_loop().run_until_complete(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
     else:
         beam = scotty.get_beam(beam_id_or_tag)
-        if dest is None:
-            dest = beam_id_or_tag
-        _download_beam(beam, dest, overwrite, filter)
+        dest = dest or beam_id_or_tag
+        asyncio.get_event_loop().run_until_complete(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
 
 
 @main.group()
