@@ -1,3 +1,4 @@
+import aiohttp
 import os
 import typing
 from datetime import datetime
@@ -66,11 +67,15 @@ class File(object):
             mtime,
         )
 
+    async def fetch(self, session, url):
+        return await session.get(url)
+
     async def stream_to(self, fileobj: "typing.BinaryIO") -> None:
         """Fetch the file content from the server and write it to fileobj"""
-        async with self._session.get(self.url, stream=True) as response:
+        async with aiohttp.ClientSession() as session:
+            response = await self.fetch(session, self.url)
             response.raise_for_status()
-            for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
+            async for chunk in response.content.iter_chunked(_CHUNK_SIZE):
                 fileobj.write(chunk)
 
     async def download(self, directory: str = ".", overwrite: bool = False) -> None:
@@ -88,7 +93,7 @@ class File(object):
         if os.path.isfile(file_) and not overwrite:
             raise NotOverwriting(file_)
 
-        async with open(file_, "wb") as f:
+        with open(file_, "wb") as f:
             await self.stream_to(f)
 
         if self.mtime is not None:

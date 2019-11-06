@@ -146,11 +146,10 @@ async def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) 
     for file_ in beam.get_files(filter_=filter):
         click.echo("Downloading {}".format(file_.file_name))
         try:
-            task = asyncio.ensure_future(file_.download(dest, overwrite=overwrite))
-            tasks.append(task)
+            tasks.append(file_.download(dest, overwrite=overwrite))
         except NotOverwriting as e:
             click.echo("{} already exists. Use --overwrite to overwrite".format(e.file))
-    await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(*tasks)
 
     _write_beam_info(beam, dest)
 
@@ -180,16 +179,22 @@ def down(
     To download an entire tag specify t:[tag_name] as an argument, replacing [tag_name] with the name of the tag"""
     scotty = Scotty(url)
 
-    if beam_id_or_tag.startswith("t:"):
+    beams = []
+    if beam_id_or_tag.startswith('t:'):
         tag = beam_id_or_tag[2:]
         dest = dest or tag
 
         for beam in scotty.get_beams_by_tag(tag):
-            asyncio.get_event_loop().run_until_complete(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
+            beams.append(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
+
     else:
         beam = scotty.get_beam(beam_id_or_tag)
         dest = dest or beam_id_or_tag
-        asyncio.get_event_loop().run_until_complete(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
+        beams.append(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(*beams))
+    loop.close()
 
 
 @main.group()
