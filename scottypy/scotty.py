@@ -1,8 +1,11 @@
 import emport
+import errno
 import json
 import os
 import requests
+import stat
 import socket
+import subprocess
 import logging
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -33,24 +36,49 @@ class Scotty(object):
             url, HTTPAdapter(
                 max_retries=Retry(total=retry_times, status_forcelist=[502, 504], backoff_factor=backoff_factor)))
         self._combadge = None
+        self._combadge_version = None
 
-    def prefetch_combadge(self):
+    def prefetch_combadge(self, combadge_version='v1'):
         """Prefetch the combadge to a temporary file. Future beams will use that combadge
         instead of having to re-download it."""
-        self._combadge = self._get_combadge()
+        self._combadge = self._get_combadge(combadge_version=combadge_version)
 
-    def _get_combadge(self):
+    def remove_combadge(self):
+        if self._combadge_version == 'v2':
+            try:
+                os.remove(self._combadge)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+        self._combadge_version = None
+
+    def _get_combadge(self, combadge_version):
         """Get the combadge from the memory if it has been prefetched. Otherwise, download
         it from Scotty"""
         if self._combadge:
             return self._combadge
 
-        with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
-            response = self._session.get("{0}/combadge".format(self._url), timeout=_TIMEOUT)
-            response.raise_for_status()
-            combadge_file.write(response.text)
-            combadge_file.flush()
-            return emport.import_file(combadge_file.name)
+        self._combadge_version = combadge_version
+
+        response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_version), timeout=_TIMEOUT)
+        response.raise_for_status()
+
+        if combadge_version == 'v1': # python version
+            with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
+                combadge_file.write(response.text)
+                combadge_file.flush()
+                return emport.import_file(combadge_file.name)
+
+        elif combadge_version == 'v2': # rust version
+            with open('/tmp/combadge', 'wb') as combadge_file:
+                for chunk in response.iter_content(chunk_size=1024):
+                    combadge_file.write(chunk)
+                st = os.stat('/tmp/combadge')
+                os.chmod('/tmp/combadge', st.st_mode | stat.S_IEXEC)
+                return combadge_file.name
+
+        else:
+            raise Exception("Wrong combadge type")
 
     @property
     def session(self):
@@ -63,7 +91,7 @@ class Scotty(object):
     def url(self):
         return self._url
 
-    def beam_up(self, directory, email=None, beam_type=None, tags=None, return_beam_object=False):
+    def beam_up(self, directory, combadge_version='v1', email=None, beam_type=None, tags=None, return_beam_object=False):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
@@ -75,8 +103,7 @@ class Scotty(object):
         if not os.path.exists(directory):
             raise PathNotExists(directory)
         directory = os.path.abspath(directory)
-
-        response = self._session.get("{0}/info".format(self._url), timeout=_TIMEOUT)
+        response = self._session.get("{}/info".format(self._url), timeout=_TIMEOUT)
         response.raise_for_status()
         transporter_host = response.json()['transporter']
 
@@ -84,7 +111,8 @@ class Scotty(object):
             'directory': directory,
             'host': socket.gethostname(),
             'auth_method': 'independent',
-            'type': beam_type
+            'type': beam_type,
+            'combadge_version': combadge_version,
         }
 
         if email:
@@ -93,13 +121,20 @@ class Scotty(object):
         if tags:
             beam['tags'] = tags
 
-        response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
+        response = self._session.post("{}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
         response.raise_for_status()
 
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
 
-        self._get_combadge().beam_up(beam_id, directory, transporter_host)
+        combadge_version = combadge_version or self._combadge_version
+        combadge = self._get_combadge(combadge_version)
+        if combadge_version == 'v1': # python version
+            combadge.beam_up(beam_id, directory, transporter_host)
+        elif combadge_version == 'v2': # rust version
+            subprocess.run([combadge, '-b', str(beam_id), '-p', directory, '-t', transporter_host], check=False, capture_output=True)
+        else:
+            raise Exception("Wrong combadge type")
 
         if return_beam_object:
             return Beam.from_json(self, beam_data['beam'])
@@ -107,7 +142,7 @@ class Scotty(object):
             return beam_data['beam']['id']
 
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
-                      stored_key=None, tags=None, return_beam_object=False):
+                      stored_key=None, tags=None, return_beam_object=False, combadge_version='v1'):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -120,6 +155,7 @@ class Scotty(object):
         :param str stored_key: An ID of a key stored in Scotty.
         :param list tags: An optional list of tags to be associated with the beam.
         :param bool return_beam_object: If set to True, return a :class:`.Beam` instance.
+        :param str combadge_version: The combagd version to be used when beaming
 
         Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
@@ -144,7 +180,8 @@ class Scotty(object):
             'stored_key': stored_key,
             'password': password,
             'type': beam_type,
-            'auth_method': auth_method
+            'auth_method': auth_method,
+            'combadge_version': combadge_version,
         }
 
         if tags:
