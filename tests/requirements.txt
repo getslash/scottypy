@@ -2,3 +2,4 @@ slash
 scotty
 aiohttp
 asyncio
+tenacity

@@ -103,7 +103,7 @@ def link(beam_id_or_tag: str, url: str, storage_base: str, dest: str) -> None:
         for beam in scotty.get_beams_by_tag(tag):
             _link_beam(storage_base, beam, os.path.join(dest, str(beam.id)))
     else:
-        beam = scotty.get_beam(beam_id_or_tag)
+        beam = asyncio.run(scotty.get_beam(beam_id_or_tag))
         if dest is None:
             dest = beam_id_or_tag
 
@@ -180,21 +180,26 @@ def down(
     scotty = Scotty(url)
 
     beams = []
-    if beam_id_or_tag.startswith('t:'):
+    if beam_id_or_tag.startswith("t:"):
         tag = beam_id_or_tag[2:]
         dest = dest or tag
 
         for beam in scotty.get_beams_by_tag(tag):
-            beams.append(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
+            beams.append(
+                _download_beam(
+                    beam, os.path.join(dest, str(beam.id)), overwrite, filter
+                )
+            )
 
     else:
         beam = scotty.get_beam(beam_id_or_tag)
         dest = dest or beam_id_or_tag
-        beams.append(_download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter))
+        beams.append(
+            _download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter)
+        )
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.gather(*beams))
-    loop.close()
 
 
 @main.group()

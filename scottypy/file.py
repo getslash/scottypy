@@ -1,9 +1,10 @@
-import aiohttp
 import os
 import typing
 from datetime import datetime
 
 import dateutil.parser
+
+import aiohttp
 
 from .exc import NotOverwriting
 from .types import JSON
