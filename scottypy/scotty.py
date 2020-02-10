@@ -7,9 +7,11 @@ import stat
 import socket
 import subprocess
 import logging
+from pathlib import PureWindowsPath
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tempfile import NamedTemporaryFile
+from uuid import uuid4
 from .file import File
 from .beam import Beam
 from .exc import PathNotExists
@@ -52,6 +54,32 @@ class Scotty(object):
                     raise
         self._combadge_version = None
 
+    def _get_combadge_type_identifier(self, combadge_version):
+        combadge_type_identifier = combadge_version if combadge_version == 'v1' else self._get_os_type()
+        return combadge_type_identifier
+
+    def _get_os_type(self):
+        cp = subprocess.run(["uname"], check=False, capture_output=True)
+        if cp.returncode != 0:
+            os_type = 'windows'
+        else:
+            os_type = cp.stdout.decode("utf-8").strip().lower()
+        return os_type
+
+    def _generate_random_combadge_name(self, string_length):
+        random_string = str(uuid4())[:string_length]
+        return f"combadge_{random_string}"
+
+    def _get_local_combadge_path(self, is_windows):
+        combadge_name = self._generate_random_combadge_name(string_length=10)
+        if is_windows:
+            local_combadge_dir = str(PureWindowsPath(os.path.join('C:', 'temp')))
+            local_combadge_path = str(PureWindowsPath(os.path.join(local_combadge_dir, f'{combadge_name}.exe')))
+        else:
+            local_combadge_dir = '/tmp'
+            local_combadge_path = os.path.join(local_combadge_dir, combadge_name)
+        return local_combadge_path
+
     def _get_combadge(self, combadge_version):
         """Get the combadge from the memory if it has been prefetched. Otherwise, download
         it from Scotty"""
@@ -59,7 +87,7 @@ class Scotty(object):
             return self._combadge
 
         self._combadge_version = combadge_version
-
+        combadge_version = self._get_combadge_type_identifier(combadge_version)
         response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_version), timeout=_TIMEOUT)
         response.raise_for_status()
 
@@ -70,11 +98,14 @@ class Scotty(object):
                 return emport.import_file(combadge_file.name)
 
         elif combadge_version == 'v2': # rust version
-            with open('/tmp/combadge', 'wb') as combadge_file:
+            is_windows = combadge_type_identifier == 'windows'
+            local_combadge_path = self._get_local_combadge_path(is_windows)
+            with open(local_combadge_path, 'wb') as combadge_file:
                 for chunk in response.iter_content(chunk_size=1024):
                     combadge_file.write(chunk)
-                st = os.stat('/tmp/combadge')
-                os.chmod('/tmp/combadge', st.st_mode | stat.S_IEXEC)
+                if not is_windows:
+                    st = os.stat(local_combadge_path)
+                    os.chmod(local_combadge_path, st.st_mode | stat.S_IEXEC)
                 return combadge_file.name
 
         else:
