@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+
+def beam_up(beam_id, path, transporter_addr):
+    with open(os.path.join(path, 'output'), 'w') as f:
+        f.write("beam_id={beam_id}, path={path}, transporter_addr={transporter_addr}, version=linux".format(
+            beam_id=beam_id, path=path, transporter_addr=transporter_addr
+        ))
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', help='beam')
+    parser.add_argument('-p', help='path')
+    parser.add_argument('-t', help='transporter')
+    args = parser.parse_args()
+    beam_up(args.b, args.p, args.t)
+
+
+if __name__ == "__main__":
+    main()

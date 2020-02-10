@@ -1,15 +1,20 @@
+import stat
+import sys
+import tempfile
+
 import emport
 import errno
 import json
 import os
 import requests
-import stat
 import socket
 import subprocess
 import logging
+
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tempfile import NamedTemporaryFile
+from uuid import uuid4
 from .file import File
 from .beam import Beam
 from .exc import PathNotExists
@@ -19,6 +24,60 @@ _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
 _TIMEOUT = 5
 logger = logging.getLogger("scotty")  # type: logging.Logger
+
+
+class CombadgePython:
+    def __init__(self, combadge_module):
+        self._combadge_module = combadge_module
+
+    @classmethod
+    def from_response(cls, response):
+        with NamedTemporaryFile(mode="w", suffix='.py', delete=False) as combadge_file:
+            combadge_file.write(response.text)
+            combadge_file.flush()
+        return cls(emport.import_file(combadge_file.name))
+
+    def remove(self):
+        os.remove(self._combadge_module.__file__)
+
+    def run(self, *, beam_id, directory, transporter_host):
+        self._combadge_module.beam_up(beam_id, directory, transporter_host)
+
+
+class CombadgeRust:
+    def __init__(self, file_name):
+        self._file_name = file_name
+
+    @classmethod
+    def _generate_random_combadge_name(cls, string_length):
+        random_string = str(uuid4())[:string_length]
+        return "combadge_{random_string}".format(random_string=random_string)
+
+    @classmethod
+    def _get_local_combadge_path(cls):
+        combadge_name = cls._generate_random_combadge_name(string_length=10)
+        local_combadge_dir = tempfile.gettempdir()
+        return os.path.join(local_combadge_dir, combadge_name)
+
+    @classmethod
+    def from_response(cls, response):
+        local_combadge_path = cls._get_local_combadge_path()
+        with open(local_combadge_path, 'wb') as combadge_file:
+            for chunk in response.iter_content(chunk_size=1024):
+                combadge_file.write(chunk)
+            st = os.stat(local_combadge_path)
+            os.chmod(local_combadge_path, st.st_mode | stat.S_IEXEC)
+            return cls(combadge_file.name)
+
+    def remove(self):
+        try:
+            os.remove(self._file_name)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+
+    def run(self, *, beam_id, directory, transporter_host):
+        subprocess.run([self._file_name, '-b', str(beam_id), '-p', directory, '-t', transporter_host], check=False)
 
 
 class Scotty(object):
@@ -44,39 +103,24 @@ class Scotty(object):
         self._combadge = self._get_combadge(combadge_version=combadge_version)
 
     def remove_combadge(self):
-        if self._combadge_version == 'v2':
-            try:
-                os.remove(self._combadge)
-            except OSError as e:
-                if e.errno != errno.ENOENT:
-                    raise
+        self._combadge.remove()
         self._combadge_version = None
 
     def _get_combadge(self, combadge_version):
         """Get the combadge from the memory if it has been prefetched. Otherwise, download
         it from Scotty"""
-        if self._combadge:
+        if self._combadge and self._combadge_version == combadge_version:
             return self._combadge
 
         self._combadge_version = combadge_version
-
-        response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_version), timeout=_TIMEOUT)
+        combadge_type_identifier = combadge_version if combadge_version == 'v1' else sys.platform
+        response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_type_identifier), timeout=_TIMEOUT)
         response.raise_for_status()
 
-        if combadge_version == 'v1': # python version
-            with NamedTemporaryFile(mode="w", suffix='.py') as combadge_file:
-                combadge_file.write(response.text)
-                combadge_file.flush()
-                return emport.import_file(combadge_file.name)
-
-        elif combadge_version == 'v2': # rust version
-            with open('/tmp/combadge', 'wb') as combadge_file:
-                for chunk in response.iter_content(chunk_size=1024):
-                    combadge_file.write(chunk)
-                st = os.stat('/tmp/combadge')
-                os.chmod('/tmp/combadge', st.st_mode | stat.S_IEXEC)
-                return combadge_file.name
-
+        if combadge_version == 'v1':  # python version
+            return CombadgePython.from_response(response)
+        elif combadge_version == 'v2':  # rust version
+            return CombadgeRust.from_response(response)
         else:
             raise Exception("Wrong combadge type")
 
@@ -127,14 +171,8 @@ class Scotty(object):
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
 
-        combadge_version = combadge_version or self._combadge_version
         combadge = self._get_combadge(combadge_version)
-        if combadge_version == 'v1': # python version
-            combadge.beam_up(beam_id, directory, transporter_host)
-        elif combadge_version == 'v2': # rust version
-            subprocess.run([combadge, '-b', str(beam_id), '-p', directory, '-t', transporter_host], check=False, capture_output=True)
-        else:
-            raise Exception("Wrong combadge type")
+        combadge.run(beam_id=beam_id, directory=directory, transporter_host=transporter_host)
 
         if return_beam_object:
             return Beam.from_json(self, beam_data['beam'])

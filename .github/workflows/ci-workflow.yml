@@ -3,10 +3,11 @@ on: [push]
 jobs:
   check:
     name: Check
-    runs-on: ubuntu-18.04
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         python_version: [3.5, 3.6, 3.7, 3.8]
+        image: [ubuntu-18.04]
 
     steps:
       - uses: actions/checkout@v1
@@ -15,6 +16,8 @@ jobs:
         with:
           python-version: ${{ matrix.python_version }}
       - name: Install requirements
-        run: pip install -e . -r tests/requirements.txt pylint
+        run: pip install -e . -r tests/requirements.txt -r unittests/requirements.txt pylint
       - name: Check with pylint
-        run: pylint -j $(nproc) scottypy tests
+        run: pylint scottypy tests unittests
+      - name: Unittest
+        run: pytest unittests
