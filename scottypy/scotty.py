@@ -40,9 +40,10 @@ class Scotty(object):
         self._combadge = None
         self._combadge_version = None
 
-    def prefetch_combadge(self, combadge_version='v1'):
+    def prefetch_combadge(self, combadge_version='v2'):
         """Prefetch the combadge to a temporary file. Future beams will use that combadge
         instead of having to re-download it."""
+        # import pudb; pudb.set_trace()
         self._combadge = self._get_combadge(combadge_version=combadge_version)
 
     def remove_combadge(self):
@@ -87,8 +88,8 @@ class Scotty(object):
             return self._combadge
 
         self._combadge_version = combadge_version
-        combadge_version = self._get_combadge_type_identifier(combadge_version)
-        response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_version), timeout=_TIMEOUT)
+        combadge_type_identifier = self._get_combadge_type_identifier(combadge_version)
+        response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_type_identifier), timeout=_TIMEOUT)
         response.raise_for_status()
 
         if combadge_version == 'v1': # python version
@@ -122,7 +123,7 @@ class Scotty(object):
     def url(self):
         return self._url
 
-    def beam_up(self, directory, combadge_version='v1', email=None, beam_type=None, tags=None, return_beam_object=False):
+    def beam_up(self, directory, combadge_version='v2', email=None, beam_type=None, tags=None, return_beam_object=False):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
@@ -137,6 +138,8 @@ class Scotty(object):
         response = self._session.get("{}/info".format(self._url), timeout=_TIMEOUT)
         response.raise_for_status()
         transporter_host = response.json()['transporter']
+
+        combadge_version = combadge_version or self._combadge_version
 
         beam = {
             'directory': directory,
@@ -158,7 +161,6 @@ class Scotty(object):
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
 
-        combadge_version = combadge_version or self._combadge_version
         combadge = self._get_combadge(combadge_version)
         if combadge_version == 'v1': # python version
             combadge.beam_up(beam_id, directory, transporter_host)
@@ -173,7 +175,7 @@ class Scotty(object):
             return beam_data['beam']['id']
 
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
-                      stored_key=None, tags=None, return_beam_object=False, combadge_version='v1'):
+                      stored_key=None, tags=None, return_beam_object=False, combadge_version='v2'):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -191,6 +193,7 @@ class Scotty(object):
         Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
         :return: the beam id."""
+        # import pudb; pudb.set_trace()
         if len([x for x in (password, rsa_key, stored_key) if x]) != 1:
             raise Exception("Either password, rsa_key or stored_key should be specified")
 
@@ -202,6 +205,8 @@ class Scotty(object):
             auth_method = 'stored_key'
         else:
             raise Exception()
+
+        combadge_version = combadge_version or self._combadge_version
 
         beam = {
             'directory': os.path.abspath(directory),
