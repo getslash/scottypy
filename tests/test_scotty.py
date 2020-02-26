@@ -11,8 +11,10 @@ def scotty_url():
 
 
 @pytest.fixture()
-def directory():
-    yield os.path.join(os.getcwd(), 'debug.log')
+def directory(tmpdir):
+    with (tmpdir / "debug.log").open("w") as f:
+        f.write("")
+    return str(tmpdir)
 
 
 @pytest.fixture()
@@ -35,10 +37,31 @@ def test_get_combadge(scotty):
 
 
 @pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
-def test_beam_up(scotty, combadge_version):
-    directory = os.path.join(os.getcwd(), 'debug.log')
+def test_beam_up(scotty, combadge_version, directory):
     email = 'damram@infinidat.com'
     beam_id = scotty.beam_up(directory=directory, email=email, combadge_version=combadge_version)
     beam = scotty.get_beam(beam_id)
     assert beam.directory == directory
     assert not beam.deleted
+
+
+@pytest.fixture
+def host():
+    return "gdc-qa-io-005"
+
+
+remote_directories = [
+    "/opt/infinidat/qa/logs/5704da68-588b-11ea-8e66-380025a4565f_0/001/vfs_logs/test/uproc/counters.nas--1",
+    "/var/log/yum.log",
+]
+
+
+@pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
+@pytest.mark.parametrize("remote_directory", remote_directories)
+def test_initiate_beam(scotty, combadge_version, host, remote_directory):
+    email = 'damram@infinidat.com'
+    beam_id = scotty.initiate_beam(user="root", host=host, directory=remote_directory, email=email, combadge_version=combadge_version, stored_key="1")
+    beam = scotty.get_beam(beam_id)
+    while not beam.completed:
+        beam.update()
+    assert not beam.error, beam.error
