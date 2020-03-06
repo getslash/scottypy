@@ -1,9 +1,9 @@
 # pylint: disable=redefined-outer-name
+import contextlib
 import datetime
 import os
 import sys
 from functools import partial
-from unittest import mock
 
 import pytest
 import requests_mock
@@ -12,7 +12,32 @@ from scottypy import Scotty
 from scottypy.scotty import CombadgeRust, CombadgePython
 
 
-def combadge(request, context):
+class APICallLogger:
+    def __init__(self):
+        self.calls = []
+
+    def log_call(self, request):
+        try:
+            json = request.json()
+        except TypeError:
+            json = None
+        self.calls.append(dict(url=request.url, params=request.qs, json=json))
+
+    @contextlib.contextmanager
+    def isolate(self):
+        old_calls = self.calls
+        self.calls = []
+        yield
+        self.calls = old_calls
+
+
+def one_or_raise(items):
+    assert len(items) == 1, "Expected one item, got {items}".format(items=items)
+    return items[0]
+
+
+def combadge(api_call_logger, request, context):
+    api_call_logger.log_call(request)
     combadge_version = request.qs.get("combadge_version")[0]
     fixtures_folder = os.path.join(os.path.dirname(__file__), "fixtures")
     if combadge_version == "v1":
@@ -27,8 +52,8 @@ def combadge(request, context):
         return f.read()
 
 
-def beams(api_call, request, context):
-    api_call(request.url, request.qs, request.json())
+def beams(api_call_logger, request, context):
+    api_call_logger.log_call(request)
     json = request.json()
     return {
         "beam": {
@@ -53,17 +78,17 @@ def beams(api_call, request, context):
 
 
 @pytest.fixture
-def api_call():
-    return mock.MagicMock()
+def api_call_logger():
+    return APICallLogger()
 
 
 @pytest.fixture
-def scotty(api_call):
+def scotty(api_call_logger):
     url = "http://mock-scotty"
     with requests_mock.Mocker() as m:
-        m.get("{url}/combadge".format(url=url), content=combadge)
+        m.get("{url}/combadge".format(url=url), content=partial(combadge, api_call_logger))
         m.get("{url}/info".format(url=url), json={"transporter": "mock-transporter"})
-        m.post("{url}/beams".format(url=url), json=partial(beams, api_call))
+        m.post("{url}/beams".format(url=url), json=partial(beams, api_call_logger))
         yield Scotty(url)
 
 
@@ -104,8 +129,58 @@ def test_beam_up(scotty, directory, combadge_version):
         assert f.read().strip() == expected
 
 
+@pytest.mark.parametrize("combadge_version,combadge_identifier", [("v1", "v1"), ("v2", "linux")])
+def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, directory, combadge_version, combadge_identifier, api_call_logger):
+    with api_call_logger.isolate():
+        scotty.prefetch_combadge(combadge_version=combadge_version)
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={identifier}".format(identifier=combadge_identifier)
+        assert one_or_raise(api_call_logger.calls)['url'] == expected_combadge_url
+    with api_call_logger.isolate():
+        scotty.beam_up(
+            directory=directory, combadge_version=combadge_version,
+        )
+        assert one_or_raise(api_call_logger.calls)['url'] == "http://mock-scotty/beams"
+
+
+def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scotty, directory, api_call_logger):
+    with api_call_logger.isolate():
+        scotty.prefetch_combadge(combadge_version='v1')
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1"
+        assert one_or_raise(api_call_logger.calls)['url'] == expected_combadge_url
+    with api_call_logger.isolate():
+        scotty.beam_up(
+            directory=directory, combadge_version='v2',
+        )
+        assert [call['url'] for call in api_call_logger.calls] == [
+            "http://mock-scotty/beams",
+            "http://mock-scotty/combadge?combadge_version=linux",
+        ]
+
+
+def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again_once(scotty, directory, api_call_logger):
+    with api_call_logger.isolate():
+        scotty.prefetch_combadge(combadge_version='v1')
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1"
+        assert one_or_raise(api_call_logger.calls)['url'] == expected_combadge_url
+    with api_call_logger.isolate():
+        scotty.beam_up(
+            directory=directory, combadge_version='v2',
+        )
+        assert [call['url'] for call in api_call_logger.calls] == [
+            "http://mock-scotty/beams",
+            "http://mock-scotty/combadge?combadge_version=linux",
+        ]
+
+    with api_call_logger.isolate():
+        scotty.beam_up(
+            directory=directory, combadge_version='v2',
+        )
+        assert one_or_raise(api_call_logger.calls)['url'] == "http://mock-scotty/beams"
+
+
+
 @pytest.mark.parametrize("combadge_version", ["v1", "v2"])
-def test_initiate_beam(scotty, directory, combadge_version, api_call):
+def test_initiate_beam(scotty, directory, combadge_version, api_call_logger):
     user = "mock-user"
     host = "mock-host"
     stored_key = "1"
@@ -120,22 +195,20 @@ def test_initiate_beam(scotty, directory, combadge_version, api_call):
     assert beam.initiator_id == user
     assert beam.host == host
     assert beam.directory == directory
-    assert api_call.call_args_list == [
-        mock.call(
-            "http://mock-scotty/beams",
-            {},
-            {
-                "beam": {
-                    "directory": directory,
-                    "host": host,
-                    "user": user,
-                    "ssh_key": None,
-                    "stored_key": stored_key,
-                    "password": None,
-                    "type": None,
-                    "auth_method": "stored_key",
-                    "combadge_version": combadge_version,
-                }
-            },
-        )
-    ]
+    assert one_or_raise(api_call_logger.calls) == dict(
+        url="http://mock-scotty/beams",
+        params={},
+        json={
+            "beam": {
+                "directory": directory,
+                "host": host,
+                "user": user,
+                "ssh_key": None,
+                "stored_key": stored_key,
+                "password": None,
+                "type": None,
+                "auth_method": "stored_key",
+                "combadge_version": combadge_version,
+            }
+        },
+    )
