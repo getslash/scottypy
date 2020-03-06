@@ -100,7 +100,7 @@ class Scotty(object):
     def prefetch_combadge(self, combadge_version='v1'):
         """Prefetch the combadge to a temporary file. Future beams will use that combadge
         instead of having to re-download it."""
-        self._combadge = self._get_combadge(combadge_version=combadge_version)
+        self._get_combadge(combadge_version=combadge_version)
 
     def remove_combadge(self):
         self._combadge.remove()
@@ -118,11 +118,12 @@ class Scotty(object):
         response.raise_for_status()
 
         if combadge_version == 'v1':  # python version
-            return CombadgePython.from_response(response)
+            self._combadge = CombadgePython.from_response(response)
         elif combadge_version == 'v2':  # rust version
-            return CombadgeRust.from_response(response)
+            self._combadge = CombadgeRust.from_response(response)
         else:
             raise Exception("Wrong combadge type")
+        return self._combadge
 
     @property
     def session(self):

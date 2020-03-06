@@ -121,6 +121,10 @@ def test_beam_up(scotty, directory, combadge_version):
     scotty.beam_up(
         directory=directory, combadge_version=combadge_version,
     )
+    _validate_beam_up(combadge_version=combadge_version, directory=directory)
+
+
+def _validate_beam_up(*, directory, combadge_version):
     combadge_identifier = sys.platform if combadge_version == "v2" else "v1"
     with open(os.path.join(directory, "output")) as f:
         expected = "beam_id=666, path={directory}, transporter_addr=mock-transporter, version={combadge_identifier}".format(
@@ -140,6 +144,7 @@ def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, direct
             directory=directory, combadge_version=combadge_version,
         )
         assert one_or_raise(api_call_logger.calls)['url'] == "http://mock-scotty/beams"
+        _validate_beam_up(combadge_version=combadge_version, directory=directory)
 
 
 def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scotty, directory, api_call_logger):
@@ -155,6 +160,7 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scott
             "http://mock-scotty/beams",
             "http://mock-scotty/combadge?combadge_version=linux",
         ]
+        _validate_beam_up(combadge_version='v2', directory=directory)
 
 
 def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again_once(scotty, directory, api_call_logger):
@@ -170,13 +176,14 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
             "http://mock-scotty/beams",
             "http://mock-scotty/combadge?combadge_version=linux",
         ]
+        _validate_beam_up(combadge_version='v2', directory=directory)
 
     with api_call_logger.isolate():
         scotty.beam_up(
             directory=directory, combadge_version='v2',
         )
         assert one_or_raise(api_call_logger.calls)['url'] == "http://mock-scotty/beams"
-
+        _validate_beam_up(combadge_version='v2', directory=directory)
 
 
 @pytest.mark.parametrize("combadge_version", ["v1", "v2"])
