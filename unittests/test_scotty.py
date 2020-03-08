@@ -30,10 +30,9 @@ class APICallLogger:
         yield
         self.calls = old_calls
 
-
-def one_or_raise(items):
-    assert len(items) == 1, "Expected one item, got {items}".format(items=items)
-    return items[0]
+    def get_single_call_or_raise(self):
+        assert len(self.calls) == 1, "Expected one call, got {calls}".format(calls=self.calls)
+        return self.calls[0]
 
 
 def combadge(api_call_logger, request, context):
@@ -138,12 +137,12 @@ def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, direct
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version=combadge_version)
         expected_combadge_url = "http://mock-scotty/combadge?combadge_version={identifier}".format(identifier=combadge_identifier)
-        assert one_or_raise(api_call_logger.calls)['url'] == expected_combadge_url
+        assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
             directory=directory, combadge_version=combadge_version,
         )
-        assert one_or_raise(api_call_logger.calls)['url'] == "http://mock-scotty/beams"
+        assert api_call_logger.get_single_call_or_raise()['url'] == "http://mock-scotty/beams"
         _validate_beam_up(combadge_version=combadge_version, directory=directory)
 
 
@@ -151,7 +150,7 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scott
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version='v1')
         expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1"
-        assert one_or_raise(api_call_logger.calls)['url'] == expected_combadge_url
+        assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
             directory=directory, combadge_version='v2',
@@ -167,7 +166,7 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version='v1')
         expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1"
-        assert one_or_raise(api_call_logger.calls)['url'] == expected_combadge_url
+        assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
             directory=directory, combadge_version='v2',
@@ -182,7 +181,7 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
         scotty.beam_up(
             directory=directory, combadge_version='v2',
         )
-        assert one_or_raise(api_call_logger.calls)['url'] == "http://mock-scotty/beams"
+        assert api_call_logger.get_single_call_or_raise()['url'] == "http://mock-scotty/beams"
         _validate_beam_up(combadge_version='v2', directory=directory)
 
 
@@ -202,7 +201,7 @@ def test_initiate_beam(scotty, directory, combadge_version, api_call_logger):
     assert beam.initiator_id == user
     assert beam.host == host
     assert beam.directory == directory
-    assert one_or_raise(api_call_logger.calls) == dict(
+    assert api_call_logger.get_single_call_or_raise() == dict(
         url="http://mock-scotty/beams",
         params={},
         json={
