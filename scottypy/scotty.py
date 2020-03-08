@@ -27,6 +27,8 @@ logger = logging.getLogger("scotty")  # type: logging.Logger
 
 
 class CombadgePython:
+    version = "v1"
+
     def __init__(self, combadge_module):
         self._combadge_module = combadge_module
 
@@ -45,6 +47,8 @@ class CombadgePython:
 
 
 class CombadgeRust:
+    version = "v2"
+
     def __init__(self, file_name):
         self._file_name = file_name
 
@@ -95,34 +99,32 @@ class Scotty(object):
             url, HTTPAdapter(
                 max_retries=Retry(total=retry_times, status_forcelist=[502, 504], backoff_factor=backoff_factor)))
         self._combadge = None
-        self._combadge_version = None
 
     def prefetch_combadge(self, combadge_version='v1'):
         """Prefetch the combadge to a temporary file. Future beams will use that combadge
         instead of having to re-download it."""
-        self._combadge = self._get_combadge(combadge_version=combadge_version)
+        self._get_combadge(combadge_version=combadge_version)
 
     def remove_combadge(self):
         self._combadge.remove()
-        self._combadge_version = None
 
     def _get_combadge(self, combadge_version):
         """Get the combadge from the memory if it has been prefetched. Otherwise, download
         it from Scotty"""
-        if self._combadge and self._combadge_version == combadge_version:
+        if self._combadge and self._combadge.version == combadge_version:
             return self._combadge
 
-        self._combadge_version = combadge_version
         combadge_type_identifier = combadge_version if combadge_version == 'v1' else sys.platform
         response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_type_identifier), timeout=_TIMEOUT)
         response.raise_for_status()
 
         if combadge_version == 'v1':  # python version
-            return CombadgePython.from_response(response)
+            self._combadge = CombadgePython.from_response(response)
         elif combadge_version == 'v2':  # rust version
-            return CombadgeRust.from_response(response)
+            self._combadge = CombadgeRust.from_response(response)
         else:
             raise Exception("Wrong combadge type")
+        return self._combadge
 
     @property
     def session(self):
