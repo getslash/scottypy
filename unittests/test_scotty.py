@@ -38,10 +38,11 @@ class APICallLogger:
 def combadge(api_call_logger, request, context):
     api_call_logger.log_call(request)
     combadge_version = request.qs.get("combadge_version")[0]
+    os_type = request.qs.get("os_type")[0]
     fixtures_folder = os.path.join(os.path.dirname(__file__), "fixtures")
     if combadge_version == "v1":
         file_name = "combadge.py"
-    elif combadge_version == "linux":
+    elif combadge_version == "v2" and os_type == "linux":
         file_name = "combadge"
     else:
         raise ValueError("Unknown combadge version {combadge_version}".format(
@@ -132,11 +133,11 @@ def _validate_beam_up(*, directory, combadge_version):
         assert f.read().strip() == expected
 
 
-@pytest.mark.parametrize("combadge_version,combadge_identifier", [("v1", "v1"), ("v2", "linux")])
-def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, directory, combadge_version, combadge_identifier, api_call_logger):
+@pytest.mark.parametrize("combadge_version", ["v1", "v2"])
+def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, directory, combadge_version, api_call_logger):
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version=combadge_version)
-        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={identifier}".format(identifier=combadge_identifier)
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={combadge_version}&os_type=linux".format(combadge_version=combadge_version)
         assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
@@ -149,7 +150,7 @@ def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, direct
 def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scotty, directory, api_call_logger):
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version='v1')
-        expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1"
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1&os_type=linux"
         assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
@@ -157,7 +158,7 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scott
         )
         assert [call['url'] for call in api_call_logger.calls] == [
             "http://mock-scotty/beams",
-            "http://mock-scotty/combadge?combadge_version=linux",
+            "http://mock-scotty/combadge?combadge_version=v2&os_type=linux",
         ]
         _validate_beam_up(combadge_version='v2', directory=directory)
 
@@ -165,7 +166,7 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(scott
 def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again_once(scotty, directory, api_call_logger):
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version='v1')
-        expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1"
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version=v1&os_type=linux"
         assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
@@ -173,7 +174,7 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
         )
         assert [call['url'] for call in api_call_logger.calls] == [
             "http://mock-scotty/beams",
-            "http://mock-scotty/combadge?combadge_version=linux",
+            "http://mock-scotty/combadge?combadge_version=v2&os_type=linux",
         ]
         _validate_beam_up(combadge_version='v2', directory=directory)
 
