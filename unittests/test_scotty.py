@@ -137,7 +137,13 @@ def _validate_beam_up(*, directory, combadge_version):
 def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(scotty, directory, combadge_version, api_call_logger):
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version=combadge_version)
-        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={combadge_version}&os_type=linux".format(combadge_version=combadge_version)
+        expected_combadge_url = (
+            "http://mock-scotty/"
+            "combadge?"
+            "combadge_version={combadge_version}"
+            "&os_type=linux"
+            .format(combadge_version=combadge_version)
+        )
         assert api_call_logger.get_single_call_or_raise()['url'] == expected_combadge_url
     with api_call_logger.isolate():
         scotty.beam_up(
