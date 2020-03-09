@@ -206,7 +206,7 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
         scotty.beam_up(
             directory=directory, combadge_version='v2',
         )
-        assert api_call_logger.get_single_call_or_raise()['url'] == "http://mock-scotty/beams"
+        api_call_logger.assert_urls_equal_to(["http://mock-scotty/beams"])
         _validate_beam_up(combadge_version='v2', directory=directory)
 
 
