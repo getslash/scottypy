@@ -193,6 +193,7 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
 
 
 @pytest.mark.parametrize("combadge_version", ["v1", "v2"])
+@pytest.mark.parametrize("directory", ["C:\\Users\\Documents\\test", "/tmp/test"])
 def test_initiate_beam(scotty, directory, combadge_version, api_call_logger):
     user = "mock-user"
     host = "mock-host"

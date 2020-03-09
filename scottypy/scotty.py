@@ -1,24 +1,23 @@
-import stat
-import sys
-import tempfile
-
-import emport
 import errno
 import json
-import os
-import requests
-import socket
-import subprocess
 import logging
-
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+import os
+import socket
+import stat
+import subprocess
+import sys
+import tempfile
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
-from .file import File
+
+import emport
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 from .beam import Beam
 from .exc import PathNotExists
-
+from .file import File
 
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
@@ -216,7 +215,7 @@ class Scotty(object):
             raise Exception()
 
         beam = {
-            'directory': os.path.abspath(directory),
+            'directory': directory,
             'host': host,
             'user': user,
             'ssh_key': rsa_key,
