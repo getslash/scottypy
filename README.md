@@ -21,7 +21,7 @@ git push origin : --tags
 
 ## ChangeLog
 
-### Unreleased
+### 0.22.0
 
 * Support python3.8
 * Support Rust Combadge (v2)
