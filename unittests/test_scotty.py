@@ -35,13 +35,22 @@ class APICallLogger:
         assert len(self.calls) == 1, "Expected one call, got {calls}".format(calls=self.calls)
         return self.calls[0]
 
+    def _assert_urls_equal(self, actual_url, expected_url):
+        actual_url_parsed = urllib.parse.urlparse(actual_url)
+        expected_url_parsed = urllib.parse.urlparse(expected_url)
+        assert actual_url_parsed.scheme == expected_url_parsed.scheme
+        assert actual_url_parsed.netloc == expected_url_parsed.netloc
+        assert actual_url_parsed.path == expected_url_parsed.path
+        assert urllib.parse.parse_qs(actual_url_parsed.query) == urllib.parse.parse_qs(expected_url_parsed.query)
+        assert actual_url_parsed.fragment == expected_url_parsed.fragment
+
     def assert_urls_equal_to(self, expected_urls):
         assert len(expected_urls) == len(self.calls), "Expected {} calls, got {} instead".format(
             len(expected_urls), len(self.calls)
         )
         for call, expected_url in zip(self.calls, expected_urls):
             actual_url = call['url']
-            assert urllib.parse.urlparse(actual_url) == urllib.parse.urlparse(expected_url)
+            self._assert_urls_equal(actual_url, expected_url)
 
 
 def combadge(api_call_logger, request, context):
