@@ -1,9 +1,9 @@
 # pylint: disable=redefined-outer-name
 import time
 
-from scottypy.scotty import Scotty
-
 import pytest
+
+from scottypy.scotty import Scotty
 
 COMBADGE_VERSIONS = ["v1", "v2"]
 
@@ -52,9 +52,10 @@ remote_directories = [
     {
         "host": linux_host,
         "path": "/opt/infinidat/qa/logs/5704da68-588b-11ea-8e66-380025a4565f_0/001/vfs_logs/test/uproc/counters.nas--1",
+        "expected_num_files": 0,
     },
-    {"host": linux_host, "path": "/var/log/yum.log"},
-    {"host": windows_host, "path": r"C:\Users\root\Documents\sandbox\debug.log"},
+    {"host": linux_host, "path": "/var/log/yum.log", "expected_num_files": 1},
+    {"host": windows_host, "path": r"C:\Users\root\Documents\sandbox\debug.log", "expected_num_files": 1},
 ]
 
 
@@ -77,3 +78,5 @@ def test_initiate_beam(scotty, combadge_version, remote_directory):
         beam.update()
         time.sleep(1)
     assert not beam.error, beam.error
+    assert beam.directory == remote_directory["path"]
+    assert len(beam.get_files()) == remote_directory["expected_num_files"]
