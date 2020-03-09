@@ -37,7 +37,7 @@ class APICallLogger:
 
     def assert_urls_equal_to(self, expected_urls):
         assert len(expected_urls) == len(self.calls), "Expected {} calls, got {} instead".format(
-            len(self.calls), len(expected_urls)
+            len(expected_urls), len(self.calls)
         )
         for call, expected_url in zip(self.calls, expected_urls):
             actual_url = call['url']
