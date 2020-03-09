@@ -114,8 +114,10 @@ class Scotty(object):
         if self._combadge and self._combadge.version == combadge_version:
             return self._combadge
 
-        combadge_type_identifier = combadge_version if combadge_version == 'v1' else sys.platform
-        response = self._session.get("{}/combadge?combadge_version={}".format(self._url, combadge_type_identifier), timeout=_TIMEOUT)
+        response = self._session.get("{}/combadge".format(self._url), timeout=_TIMEOUT, params={
+            "combadge_version": combadge_version,
+            "os_type": sys.platform,
+        })
         response.raise_for_status()
 
         if combadge_version == 'v1':  # python version
@@ -159,6 +161,7 @@ class Scotty(object):
             'auth_method': 'independent',
             'type': beam_type,
             'combadge_version': combadge_version,
+            'os_type': sys.platform,
         }
 
         if email:
