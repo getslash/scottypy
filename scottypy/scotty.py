@@ -114,7 +114,10 @@ class Scotty(object):
         if self._combadge and self._combadge.version == combadge_version:
             return self._combadge
 
-        response = self._session.get("{}/combadge?combadge_version={}&os_type={}".format(self._url, combadge_version, sys.platform), timeout=_TIMEOUT)
+        response = self._session.get("{}/combadge".format(self._url), timeout=_TIMEOUT, params={
+            "combadge_version": combadge_version,
+            "os_type": sys.platform,
+        })
         response.raise_for_status()
 
         if combadge_version == 'v1':  # python version
