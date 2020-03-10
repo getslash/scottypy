@@ -150,7 +150,7 @@ class Scotty(object):
         :return: the beam id."""
         if not os.path.exists(directory):
             raise PathNotExists(directory)
-        combadge_version = self._get_combadge_version_to_use(combadge_version=combadge_version)
+        combadge_version = self._get_combadge_version(combadge_version)
         directory = os.path.abspath(directory)
         response = self._session.get("{}/info".format(self._url), timeout=_TIMEOUT)
         response.raise_for_status()
@@ -185,9 +185,9 @@ class Scotty(object):
         else:
             return beam_data['beam']['id']
 
-    def _get_combadge_version_to_use(self, combadge_version=None):
+    def _get_combadge_version(self, combadge_version_override=None):
         return (
-            combadge_version or
+            combadge_version_override or
             (self._combadge and self._combadge.version) or
             _DEFAULT_COMBADGE_VERSION
         )
@@ -211,7 +211,7 @@ class Scotty(object):
         Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
         :return: the beam id."""
-        combadge_version = self._get_combadge_version_to_use(combadge_version=combadge_version)
+        combadge_version = self._get_combadge_version(combadge_version)
         if len([x for x in (password, rsa_key, stored_key) if x]) != 1:
             raise Exception("Either password, rsa_key or stored_key should be specified")
 
