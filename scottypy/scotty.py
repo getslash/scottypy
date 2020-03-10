@@ -187,9 +187,9 @@ class Scotty(object):
 
     def _get_combadge_version(self, version_override=None):
         return (
-                version_override or
-                (self._combadge and self._combadge.version) or
-                _DEFAULT_COMBADGE_VERSION
+            version_override or
+            (self._combadge and self._combadge.version) or
+            _DEFAULT_COMBADGE_VERSION
         )
 
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
