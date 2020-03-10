@@ -1,0 +1,23 @@
+name: CI
+on: [push]
+jobs:
+  check:
+    name: Check
+    runs-on: ${{ matrix.image }}
+    strategy:
+      matrix:
+        python_version: [3.5, 3.6, 3.7, 3.8]
+        image: [ubuntu-18.04]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python_version }}
+      - name: Install requirements
+        run: pip install -e . -r tests/requirements.txt -r unittests/requirements.txt pylint
+      - name: Check with pylint
+        run: pylint scottypy tests unittests
+      - name: Unittest
+        run: pytest unittests
