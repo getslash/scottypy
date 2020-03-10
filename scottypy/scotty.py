@@ -22,6 +22,7 @@ from .file import File
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
 _TIMEOUT = 5
+_DEFAULT_COMBADGE_VERSION = "v1"
 logger = logging.getLogger("scotty")  # type: logging.Logger
 
 
@@ -99,7 +100,7 @@ class Scotty(object):
                 max_retries=Retry(total=retry_times, status_forcelist=[502, 504], backoff_factor=backoff_factor)))
         self._combadge = None
 
-    def prefetch_combadge(self, combadge_version='v1'):
+    def prefetch_combadge(self, combadge_version=_DEFAULT_COMBADGE_VERSION):
         """Prefetch the combadge to a temporary file. Future beams will use that combadge
         instead of having to re-download it."""
         self._get_combadge(combadge_version=combadge_version)
@@ -138,7 +139,7 @@ class Scotty(object):
     def url(self):
         return self._url
 
-    def beam_up(self, directory, combadge_version='v1', email=None, beam_type=None, tags=None, return_beam_object=False):
+    def beam_up(self, directory, combadge_version=None, email=None, beam_type=None, tags=None, return_beam_object=False):
         """Beam up the specified local directory to Scotty.
 
         :param str directory: Local directory to beam.
@@ -149,6 +150,7 @@ class Scotty(object):
         :return: the beam id."""
         if not os.path.exists(directory):
             raise PathNotExists(directory)
+        combadge_version = self._get_combadge_version_to_use(combadge_version=combadge_version)
         directory = os.path.abspath(directory)
         response = self._session.get("{}/info".format(self._url), timeout=_TIMEOUT)
         response.raise_for_status()
@@ -183,8 +185,16 @@ class Scotty(object):
         else:
             return beam_data['beam']['id']
 
+    def _get_combadge_version_to_use(self, combadge_version=None):
+        if combadge_version is None:
+            if self._combadge is None:
+                combadge_version = _DEFAULT_COMBADGE_VERSION
+            else:
+                combadge_version = self._combadge.version
+        return combadge_version
+
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
-                      stored_key=None, tags=None, return_beam_object=False, combadge_version='v1'):
+                      stored_key=None, tags=None, return_beam_object=False, combadge_version=None):
         """Order scotty to beam the specified directory from the specified host.
 
         :param str user: The username in the remote machine.
@@ -202,6 +212,7 @@ class Scotty(object):
         Either `password`, `rsa_key` or `stored_key` should be specified, but only one of them.
 
         :return: the beam id."""
+        combadge_version = self._get_combadge_version_to_use(combadge_version=combadge_version)
         if len([x for x in (password, rsa_key, stored_key) if x]) != 1:
             raise Exception("Either password, rsa_key or stored_key should be specified")
 
