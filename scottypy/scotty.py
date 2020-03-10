@@ -186,12 +186,11 @@ class Scotty(object):
             return beam_data['beam']['id']
 
     def _get_combadge_version_to_use(self, combadge_version=None):
-        if combadge_version is None:
-            if self._combadge is None:
-                combadge_version = _DEFAULT_COMBADGE_VERSION
-            else:
-                combadge_version = self._combadge.version
-        return combadge_version
+        return (
+            combadge_version or
+            (self._combadge and self._combadge.version) or
+            _DEFAULT_COMBADGE_VERSION
+        )
 
     def initiate_beam(self, user, host, directory, password=None, rsa_key=None, email=None, beam_type=None,
                       stored_key=None, tags=None, return_beam_object=False, combadge_version=None):
