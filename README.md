@@ -21,6 +21,10 @@ git push origin : --tags
 
 ## ChangeLog
 
+### 0.22.1
+
+* Fix bug with prefetch and then beam up without explicitly setting version
+
 ### 0.22.0
 
 * Support python3.8
