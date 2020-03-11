@@ -78,6 +78,7 @@ remote_directories = [
         "expected_num_files": 0,
     },
     {"host": linux_host, "path": "/var/log/yum.log", "expected_num_files": 1},
+    {"host": linux_host, "path": "/doesnt_exist", "expected_num_files": 0},
     {"host": windows_host, "path": r"C:\Users\root\Documents\sandbox\debug.log", "expected_num_files": 1},
 ]
 
