@@ -1,5 +1,6 @@
 # pylint: disable=redefined-outer-name
 import time
+import os
 
 import pytest
 
@@ -10,12 +11,16 @@ COMBADGE_VERSIONS = ["v1", "v2"]
 
 @pytest.fixture()
 def scotty_url():
-    return "http://scotty-staging.lab.gdc.il.infinidat.com"
+    return os.environ.get("SCOTTY_URL", "http://scotty-staging.lab.gdc.il.infinidat.com")
 
 
 @pytest.fixture()
 def directory(tmpdir):
     with (tmpdir / "debug.log").open("w") as f:
+        f.write("")
+    sub_dir = tmpdir / "sub_dir"
+    sub_dir.mkdir()
+    with (sub_dir / "sub_debug.log").open("w") as f:
         f.write("")
     return str(tmpdir)
 
@@ -43,6 +48,24 @@ def test_beam_up(scotty, combadge_version, directory):
     beam = scotty.get_beam(beam_id)
     assert beam.directory == directory
     assert not beam.deleted
+    ext = "gz" if combadge_version == "v1" else "zst"
+    expected_files = [
+        file.format(ext=ext)
+        for file in ['./debug.log.{ext}', './sub_dir/sub_debug.log.{ext}']
+    ]
+    assert [file.file_name for file in beam.get_files()] == expected_files
+
+
+@pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
+def test_beam_up_empty_directory(scotty, combadge_version, tmpdir):
+    email = "damram@infinidat.com"
+    directory = tmpdir
+    beam_id = scotty.beam_up(
+        directory=directory, email=email, combadge_version=combadge_version
+    )
+    beam = scotty.get_beam(beam_id)
+    assert beam.directory == str(directory)
+    assert len(beam.get_files()) == 0
 
 
 linux_host = "gdc-qa-io-005"
