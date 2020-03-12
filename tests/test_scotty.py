@@ -7,6 +7,7 @@ import pytest
 from scottypy.scotty import Scotty
 
 COMBADGE_VERSIONS = ["v1", "v2"]
+EMAIL = "infradev@infinidat.com"
 
 
 @pytest.fixture()
@@ -41,7 +42,7 @@ def test_prefetch_combadge(scotty, combadge_version):
 
 @pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
 def test_beam_up(scotty, combadge_version, directory):
-    email = "damram@infinidat.com"
+    email = EMAIL
     beam_id = scotty.beam_up(
         directory=directory, email=email, combadge_version=combadge_version
     )
@@ -58,7 +59,7 @@ def test_beam_up(scotty, combadge_version, directory):
 
 @pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
 def test_beam_up_empty_directory(scotty, combadge_version, tmpdir):
-    email = "damram@infinidat.com"
+    email = EMAIL
     directory = tmpdir
     beam_id = scotty.beam_up(
         directory=directory, email=email, combadge_version=combadge_version
@@ -88,7 +89,7 @@ remote_directories = [
 def test_initiate_beam(scotty, combadge_version, remote_directory):
     if remote_directory["host"] == windows_host and combadge_version == "v1":
         raise pytest.skip("combadge v1 doesn't support windows")
-    email = "damram@infinidat.com"
+    email = EMAIL
     beam_id = scotty.initiate_beam(
         user="root",
         host=remote_directory["host"],
