@@ -74,8 +74,8 @@ def test_beam_up_empty_directory(scotty, combadge_version, tmpdir):
     assert len(beam.get_files()) == 0
 
 
-linux_host = "gdc-qa-io-005.lab.gdc.il.infinidat.com"
-windows_host = "gdc-qa-io-349.lab.gdc.il.infinidat.com"
+linux_host = os.environ['LINUX_HOST']
+windows_host = os.environ['WINDOWS_HOST']
 
 remote_directories = [
     {
