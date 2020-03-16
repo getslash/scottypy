@@ -1,21 +1,27 @@
 # pylint: disable=redefined-outer-name
 import time
+import os
 
 import pytest
 
 from scottypy.scotty import Scotty
 
 COMBADGE_VERSIONS = ["v1", "v2"]
+EMAIL = "infradev@infinidat.com"
 
 
 @pytest.fixture()
 def scotty_url():
-    return "http://scotty-staging.lab.gdc.il.infinidat.com"
+    return os.environ.get("SCOTTY_URL", "http://scotty-staging.lab.gdc.il.infinidat.com")
 
 
 @pytest.fixture()
 def directory(tmpdir):
     with (tmpdir / "debug.log").open("w") as f:
+        f.write("")
+    sub_dir = tmpdir / "sub_dir"
+    sub_dir.mkdir()
+    with (sub_dir / "sub_debug.log").open("w") as f:
         f.write("")
     return str(tmpdir)
 
@@ -36,13 +42,31 @@ def test_prefetch_combadge(scotty, combadge_version):
 
 @pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
 def test_beam_up(scotty, combadge_version, directory):
-    email = "damram@infinidat.com"
+    email = EMAIL
     beam_id = scotty.beam_up(
         directory=directory, email=email, combadge_version=combadge_version
     )
     beam = scotty.get_beam(beam_id)
     assert beam.directory == directory
     assert not beam.deleted
+    ext = "gz" if combadge_version == "v1" else "zst"
+    expected_files = [
+        file.format(ext=ext)
+        for file in ['./debug.log.{ext}', './sub_dir/sub_debug.log.{ext}']
+    ]
+    assert [file.file_name for file in beam.get_files()] == expected_files
+
+
+@pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
+def test_beam_up_empty_directory(scotty, combadge_version, tmpdir):
+    email = EMAIL
+    directory = tmpdir
+    beam_id = scotty.beam_up(
+        directory=directory, email=email, combadge_version=combadge_version
+    )
+    beam = scotty.get_beam(beam_id)
+    assert beam.directory == str(directory)
+    assert len(beam.get_files()) == 0
 
 
 linux_host = "gdc-qa-io-005"
@@ -55,6 +79,7 @@ remote_directories = [
         "expected_num_files": 0,
     },
     {"host": linux_host, "path": "/var/log/yum.log", "expected_num_files": 1},
+    {"host": linux_host, "path": "/doesnt_exist", "expected_num_files": 0},
     {"host": windows_host, "path": r"C:\Users\root\Documents\sandbox\debug.log", "expected_num_files": 1},
 ]
 
@@ -64,7 +89,7 @@ remote_directories = [
 def test_initiate_beam(scotty, combadge_version, remote_directory):
     if remote_directory["host"] == windows_host and combadge_version == "v1":
         raise pytest.skip("combadge v1 doesn't support windows")
-    email = "damram@infinidat.com"
+    email = EMAIL
     beam_id = scotty.initiate_beam(
         user="root",
         host=remote_directory["host"],
