@@ -18,11 +18,11 @@ def scotty_url():
 @pytest.fixture()
 def directory(tmpdir):
     with (tmpdir / "debug.log").open("w") as f:
-        f.write("")
+        f.write("debug")
     sub_dir = tmpdir / "sub_dir"
     sub_dir.mkdir()
     with (sub_dir / "sub_debug.log").open("w") as f:
-        f.write("")
+        f.write("sub debug")
     return str(tmpdir)
 
 
@@ -41,7 +41,7 @@ def test_prefetch_combadge(scotty, combadge_version):
 
 
 @pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
-def test_beam_up(scotty, combadge_version, directory):
+def test_beam_up(scotty, combadge_version, directory, tmpdir):
     email = EMAIL
     beam_id = scotty.beam_up(
         directory=directory, email=email, combadge_version=combadge_version
@@ -49,12 +49,17 @@ def test_beam_up(scotty, combadge_version, directory):
     beam = scotty.get_beam(beam_id)
     assert beam.directory == directory
     assert not beam.deleted
-    ext = "gz" if combadge_version == "v1" else "zst"
-    expected_files = [
-        file.format(ext=ext)
-        for file in ['./debug.log.{ext}', './sub_dir/sub_debug.log.{ext}']
-    ]
-    assert [file.file_name for file in beam.get_files()] == expected_files
+    expected_files = ['./debug.log.gz', './sub_dir/sub_debug.log.gz']
+    files = beam.get_files()
+    assert [file.file_name for file in files] == expected_files
+    for file in files:
+        file.download(str(tmpdir / "expected"))
+        file_name_no_compression_ext = file.file_name.replace(".gz", "")
+        with (tmpdir / "expected" / file_name_no_compression_ext).open() as f:
+            actual = f.read()
+        with open(os.path.join(directory, file_name_no_compression_ext)) as f:
+            expected = f.read()
+        assert actual == expected
 
 
 @pytest.mark.parametrize("combadge_version", COMBADGE_VERSIONS)
@@ -69,8 +74,8 @@ def test_beam_up_empty_directory(scotty, combadge_version, tmpdir):
     assert len(beam.get_files()) == 0
 
 
-linux_host = "gdc-qa-io-005"
-windows_host = "gdc-qa-io-349"
+linux_host = os.environ['LINUX_HOST']
+windows_host = os.environ['WINDOWS_HOST']
 
 remote_directories = [
     {
