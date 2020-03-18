@@ -28,7 +28,7 @@ setup(name="scottypy",
       author_email="roey.ghost@gmail.com",
       url="https://github.com/getslash/scottypy",
       version=__version__,  # pylint: disable=E0602
-      packages=find_packages(exclude=["tests"]),
+      packages=find_packages(exclude=["unittests"]),
       install_requires=install_requires,
       entry_points=dict(
           console_scripts=[
