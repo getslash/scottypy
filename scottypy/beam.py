@@ -2,6 +2,8 @@ import dateutil.parser
 import json
 from pact import Pact
 
+from scottypy.utils import raise_for_status
+
 
 class Beam(object):
     """A class representing a single beam.
@@ -43,7 +45,7 @@ class Beam(object):
     def update(self):
         """Update the status of the beam object"""
         response = self._scotty.session.get("{0}/beams/{1}".format(self._scotty.url, self.id))
-        response.raise_for_status()
+        raise_for_status(response)
         beam_obj = response.json()['beam']
 
         self._file_ids = beam_obj['files']
@@ -93,13 +95,14 @@ class Beam(object):
         response = self._scotty.session.put(
             "{0}/beams/{1}".format(self._scotty.url, self.id),
             data=json.dumps(data))
-        response.raise_for_status()
+        raise_for_status(response)
         self._comment = comment
 
     def set_issue_association(self, issue_id, associated):
-        self._scotty.session.request(
+        raise_for_status(self._scotty.session.request(
             'POST' if associated else 'DELETE',
-            "{0}/beams/{1}/issues/{2}".format(self._scotty.url, self.id, issue_id)).raise_for_status()
+            "{0}/beams/{1}/issues/{2}".format(self._scotty.url, self.id, issue_id)
+        ))
 
     def _check_finish(self):
         self.update()

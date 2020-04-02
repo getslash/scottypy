@@ -18,6 +18,7 @@ from requests.packages.urllib3.util.retry import Retry
 from .beam import Beam
 from .exc import PathNotExists
 from .file import File
+from .utils import raise_for_status
 
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
@@ -118,7 +119,7 @@ class Scotty(object):
             "combadge_version": combadge_version,
             "os_type": sys.platform,
         })
-        response.raise_for_status()
+        raise_for_status(response)
 
         if combadge_version == 'v1':  # python version
             self._combadge = CombadgePython.from_response(response)
@@ -153,7 +154,7 @@ class Scotty(object):
         combadge_version = self._get_combadge_version(version_override=combadge_version)
         directory = os.path.abspath(directory)
         response = self._session.get("{}/info".format(self._url), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
         transporter_host = response.json()['transporter']
 
         beam = {
@@ -172,7 +173,7 @@ class Scotty(object):
             beam['tags'] = tags
 
         response = self._session.post("{}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
         beam_data = response.json()
         beam_id = beam_data['beam']['id']
@@ -243,7 +244,7 @@ class Scotty(object):
             beam['email'] = email
 
         response = self._session.post("{0}/beams".format(self._url), data=json.dumps({'beam': beam}), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
         beam_data = response.json()
 
@@ -258,7 +259,7 @@ class Scotty(object):
         :param int beam_id: Beam ID.
         :param str tag: Tag name."""
         response = self._session.post("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
     def remove_tag(self, beam_id, tag):
         """Remove the specified tag from the specified beam id.
@@ -266,7 +267,7 @@ class Scotty(object):
         :param int beam_id: Beam ID.
         :param str tag: Tag name."""
         response = self._session.delete("{0}/beams/{1}/tags/{2}".format(self._url, beam_id, tag), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
     def get_beam(self, beam_id):
         """Retrieve details about the specified beam.
@@ -274,7 +275,7 @@ class Scotty(object):
         :param int beam_id: Beam ID.
         :rtype: :class:`.Beam`"""
         response = self._session.get("{0}/beams/{1}".format(self._url, beam_id), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
         json_response = response.json()
         return Beam.from_json(self, json_response['beam'])
@@ -284,7 +285,7 @@ class Scotty(object):
             "{0}/files".format(self._url),
             params={"beam_id": beam_id, "filter": filter_},
             timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
         return [File.from_json(self._session, f) for f in response.json()['files']]
 
     def get_file(self, file_id):
@@ -293,7 +294,7 @@ class Scotty(object):
         :param int file_id: File ID.
         :rtype: :class:`.File`"""
         response = self._session.get("{0}/files/{1}".format(self._url, file_id), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
         json_response = response.json()
         return File.from_json(self._session, json_response['file'])
@@ -306,7 +307,7 @@ class Scotty(object):
         """
 
         response = self._session.get("{0}/beams?tag={1}".format(self._url, tag), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
         ids = (b['id'] for b in response.json()['beams'])
         return [self.get_beam(id_) for id_ in ids]
@@ -314,7 +315,7 @@ class Scotty(object):
     def sanity_check(self):
         """Check if this instance of Scotty is functioning. Raise an exception if something's wrong"""
         response = requests.get("{0}/info".format(self._url))
-        response.raise_for_status()
+        raise_for_status(response)
         info = json.loads(response.text)
         assert 'version' in info
 
@@ -328,20 +329,20 @@ class Scotty(object):
             }
         }
         response = self._session.post("{}/trackers".format(self._url), data=json.dumps(data), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
         return response.json()['tracker']['id']
 
     def get_tracker_by_name(self, name):
         try:
             response = self._session.get("{}/trackers/by_name/{}".format(self._url, name), timeout=_TIMEOUT)
-            response.raise_for_status()
+            raise_for_status(response)
             return response.json()['tracker']
         except requests.exceptions.HTTPError:
             return None
 
     def get_tracker_id(self, name):
         response = self._session.get("{}/trackers/by_name/{}".format(self._url, name), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
         return response.json()['tracker']['id']
 
     def create_issue(self, tracker_id, id_in_tracker):
@@ -352,12 +353,12 @@ class Scotty(object):
             }
         }
         response = self._session.post("{}/issues".format(self._url), data=json.dumps(data), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
         return response.json()['issue']['id']
 
     def delete_issue(self, issue_id):
         response = self._session.delete("{}/issues/{}".format(self._url, issue_id), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
     def get_issue_by_tracker(self, tracker_id, id_in_tracker):
         params = {
@@ -366,14 +367,14 @@ class Scotty(object):
         }
         response = self._session.get("{}/issues/get_by_tracker".format(self._url), params=params, timeout=_TIMEOUT)
         try:
-            response.raise_for_status()
+            raise_for_status(response)
             return response.json()['issue']
         except requests.exceptions.HTTPError:
             return None
 
     def delete_tracker(self, tracker_id):
         response = self._session.delete("{}/trackers/{}".format(self._url, tracker_id), timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
 
     def update_tracker(self, tracker_id, name=None, url=None, config=None):
         data = {}
@@ -391,4 +392,4 @@ class Scotty(object):
             "{}/trackers/{}".format(self._url, tracker_id),
             data=json.dumps({'tracker': data}),
             timeout=_TIMEOUT)
-        response.raise_for_status()
+        raise_for_status(response)
