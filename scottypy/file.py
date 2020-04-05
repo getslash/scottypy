@@ -2,6 +2,7 @@ import os
 import dateutil.parser
 from datetime import datetime
 from .exc import NotOverwriting
+from .utils import raise_for_status
 
 _CHUNK_SIZE = 1024 ** 2 * 4
 _EPOCH = datetime.utcfromtimestamp(0)
@@ -42,7 +43,7 @@ class File(object):
     def stream_to(self, fileobj):
         """Fetch the file content from the server and write it to fileobj"""
         response = self._session.get(self.url, stream=True)
-        response.raise_for_status()
+        raise_for_status(response)
 
         for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
             fileobj.write(chunk)
