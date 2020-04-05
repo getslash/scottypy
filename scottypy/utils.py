@@ -8,11 +8,11 @@ def raise_for_status(response):
         error_type = "Server"
     else:
         error_type = ""
-    try:
-        content = response.content.decode()
-    except UnicodeDecodeError:
-        content = "<content could not be decoded>"
     if error_type:
+        try:
+            content = response.content.decode()
+        except UnicodeDecodeError:
+            content = "<content could not be decoded>"
         raise requests.HTTPError(
             "{status_code}: {error_type} Error: {content}".format(
                 status_code=response.status_code,
