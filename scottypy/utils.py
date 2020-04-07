@@ -1,7 +1,7 @@
 import requests
 
 
-def raise_for_status(response):
+def raise_for_status(response: requests.Response) -> None:
     if 400 <= response.status_code < 500:
         error_type = "Client"
     elif 500 <= response.status_code < 600:

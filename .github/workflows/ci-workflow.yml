@@ -20,6 +20,6 @@ jobs:
       - name: Check with pylint
         run: pylint scottypy unittests
       - name: Check with mypy
-        run: MYPYPATH=stubs mypy scottypy
+        run: MYPYPATH=stubs mypy scottypy --strict
       - name: Unittest
         run: pytest unittests

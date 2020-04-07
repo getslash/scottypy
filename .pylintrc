@@ -1,5 +1,5 @@
 [MESSAGES CONTROL]
-disable=R,broad-except,protected-access,unused-argument,redefined-builtin,missing-docstring,invalid-name,ungrouped-imports,wrong-import-order
+disable=R,broad-except,protected-access,unused-argument,redefined-builtin,missing-docstring,invalid-name,ungrouped-imports,wrong-import-order,bad-continuation
 
 [FORMAT]
 max-line-length=150
