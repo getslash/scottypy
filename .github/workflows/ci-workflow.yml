@@ -16,8 +16,10 @@ jobs:
         with:
           python-version: ${{ matrix.python_version }}
       - name: Install requirements
-        run: pip install -e . -r unittests/requirements.txt pylint
+        run: pip install -e . -r unittests/requirements.txt pylint mypy
       - name: Check with pylint
         run: pylint scottypy unittests
+      - name: Check with mypy
+        run: MYPYPATH=stubs mypy scottypy
       - name: Unittest
         run: pytest unittests
