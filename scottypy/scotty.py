@@ -109,7 +109,6 @@ class CombadgeRust(Combadge):
         subprocess.run([self._file_name, '-b', str(beam_id), '-p', directory, '-t', transporter_host], check=False)
 
 
-
 class Scotty(object):
     """Main class that communicates with Scotty.
 
