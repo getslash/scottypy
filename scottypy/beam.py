@@ -1,9 +1,11 @@
-import dateutil.parser
 import json
-from pact import Pact
 import typing
 
+import dateutil.parser
+from pact import Pact
+
 from scottypy.utils import raise_for_status
+
 from .types import JSON
 
 if typing.TYPE_CHECKING:
@@ -27,23 +29,24 @@ class Beam(object):
     :ivar purge_time: The number of days left for this beam to exist if it has no pinners.
     :ivar size: The total size of the beam in bytes.
     """
+
     def __init__(
-            self,
-            scotty: "Scotty",
-            id_: int,
-            file_ids: typing.List[int],
-            initiator_id: int,
-            start: "datetime",
-            deleted: bool,
-            completed: bool,
-            pins: typing.List[int],
-            host: str,
-            error: str,
-            directory: str,
-            purge_time: int,
-            size: int,
-            comment: str,
-            associated_issues: typing.List[int]
+        self,
+        scotty: "Scotty",
+        id_: int,
+        file_ids: typing.List[int],
+        initiator_id: int,
+        start: "datetime",
+        deleted: bool,
+        completed: bool,
+        pins: typing.List[int],
+        host: str,
+        error: str,
+        directory: str,
+        purge_time: int,
+        size: int,
+        comment: str,
+        associated_issues: typing.List[int],
     ):
         self.id = id_
         self._file_ids = file_ids
@@ -67,38 +70,41 @@ class Beam(object):
 
     def update(self) -> None:
         """Update the status of the beam object"""
-        response = self._scotty.session.get("{0}/beams/{1}".format(self._scotty.url, self.id))
+        response = self._scotty.session.get(
+            "{0}/beams/{1}".format(self._scotty.url, self.id)
+        )
         raise_for_status(response)
-        beam_obj = response.json()['beam']
+        beam_obj = response.json()["beam"]
 
-        self._file_ids = beam_obj['files']
-        self.deleted = beam_obj['deleted']
-        self.completed = beam_obj['completed']
-        self.pins = beam_obj['pins']
-        self.error = beam_obj['error']
-        self.purge_time = beam_obj['purge_time']
-        self.associated_issues = beam_obj['associated_issues']
-        self.size = beam_obj['size']
-        self._comment = beam_obj['comment']
+        self._file_ids = beam_obj["files"]
+        self.deleted = beam_obj["deleted"]
+        self.completed = beam_obj["completed"]
+        self.pins = beam_obj["pins"]
+        self.error = beam_obj["error"]
+        self.purge_time = beam_obj["purge_time"]
+        self.associated_issues = beam_obj["associated_issues"]
+        self.size = beam_obj["size"]
+        self._comment = beam_obj["comment"]
 
     @classmethod
     def from_json(cls, scotty: "Scotty", json_node: JSON) -> "Beam":
         return cls(
             scotty,
-            json_node['id'],
-            json_node.get('files', []),
-            json_node['initiator'],
-            dateutil.parser.parse(json_node['start']),
-            json_node['deleted'],
-            json_node['completed'],
-            json_node['pins'],
-            json_node['host'],
-            json_node['error'],
-            json_node['directory'],
-            json_node['purge_time'],
-            json_node['size'],
-            json_node['comment'],
-            json_node['associated_issues'])
+            json_node["id"],
+            json_node.get("files", []),
+            json_node["initiator"],
+            dateutil.parser.parse(json_node["start"]),
+            json_node["deleted"],
+            json_node["completed"],
+            json_node["pins"],
+            json_node["host"],
+            json_node["error"],
+            json_node["directory"],
+            json_node["purge_time"],
+            json_node["size"],
+            json_node["comment"],
+            json_node["associated_issues"],
+        )
 
     def iter_files(self) -> typing.Iterator["File"]:
         """Iterate the beam files one by one, yielding :class:`.File` objects
@@ -114,18 +120,20 @@ class Beam(object):
         return self._scotty.get_files(self.id, filter_)
 
     def set_comment(self, comment: str) -> None:
-        data = {'beam': {'comment': comment}}
+        data = {"beam": {"comment": comment}}
         response = self._scotty.session.put(
-            "{0}/beams/{1}".format(self._scotty.url, self.id),
-            data=json.dumps(data))
+            "{0}/beams/{1}".format(self._scotty.url, self.id), data=json.dumps(data)
+        )
         raise_for_status(response)
         self._comment = comment
 
     def set_issue_association(self, issue_id: str, associated: bool) -> None:
-        raise_for_status(self._scotty.session.request(
-            'POST' if associated else 'DELETE',
-            "{0}/beams/{1}/issues/{2}".format(self._scotty.url, self.id, issue_id)
-        ))
+        raise_for_status(
+            self._scotty.session.request(
+                "POST" if associated else "DELETE",
+                "{0}/beams/{1}/issues/{2}".format(self._scotty.url, self.id, issue_id),
+            )
+        )
 
     def _check_finish(self) -> bool:
         self.update()

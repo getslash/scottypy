@@ -22,11 +22,11 @@ def test_raise_for_status_client_error():
 def test_raise_for_status_server_error():
     with pytest.raises(HTTPError, match="500: Server Error: should not be x"):
         utils.raise_for_status(
-            MockResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, content=b"should not be x")
+            MockResponse(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR, content=b"should not be x"
+            )
         )
 
 
 def test_raise_for_status_no_error():
-    utils.raise_for_status(
-        MockResponse(status_code=HTTPStatus.OK)
-    )
+    utils.raise_for_status(MockResponse(status_code=HTTPStatus.OK))

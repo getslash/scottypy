@@ -17,9 +17,10 @@ jobs:
           python-version: ${{ matrix.python_version }}
       - name: Install requirements
         run: pip install -e . -r unittests/requirements.txt pylint mypy
-      - name: Check with pylint
-        run: pylint scottypy unittests
-      - name: Check with mypy
-        run: MYPYPATH=stubs mypy scottypy --strict
+      - name: Format
+        if: matrix.python_version == '3.8'
+        run: pip install black isort && make format
+      - name: Lint
+        run: make lint
       - name: Unittest
-        run: pytest unittests
+        run: make test
