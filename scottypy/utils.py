@@ -19,5 +19,5 @@ def raise_for_status(response: requests.Response) -> None:
                 error_type=error_type,
                 content=content,
             ),
-            response=response
+            response=response,
         )

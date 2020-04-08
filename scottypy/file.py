@@ -1,10 +1,12 @@
 import os
-import dateutil.parser
+import typing
 from datetime import datetime
+
+import dateutil.parser
+
 from .exc import NotOverwriting
 from .types import JSON
 from .utils import raise_for_status
-import typing
 
 if typing.TYPE_CHECKING:
     from requests import Session
@@ -37,7 +39,7 @@ class File(object):
         storage_name: str,
         size: int,
         url: str,
-        mtime: typing.Optional[datetime]
+        mtime: typing.Optional[datetime],
     ):
 
         self.id = id_
@@ -53,8 +55,16 @@ class File(object):
     def from_json(cls, session: "Session", json_node: JSON) -> "File":
         raw_mtime = json_node.get("mtime")
         mtime = None if raw_mtime is None else dateutil.parser.parse(raw_mtime)
-        return cls(session, json_node['id'], json_node['file_name'], json_node['status'], json_node['storage_name'],
-                   json_node['size'], json_node['url'], mtime)
+        return cls(
+            session,
+            json_node["id"],
+            json_node["file_name"],
+            json_node["status"],
+            json_node["storage_name"],
+            json_node["size"],
+            json_node["url"],
+            mtime,
+        )
 
     def stream_to(self, fileobj: "typing.BinaryIO") -> None:
         """Fetch the file content from the server and write it to fileobj"""

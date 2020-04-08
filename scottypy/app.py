@@ -1,16 +1,19 @@
 from __future__ import print_function
-import logging
-import re
-import os
+
 import json
-import webbrowser
-import capacity
-from getpass import getpass
-import click
-from .scotty import Scotty
-from .exc import NotOverwriting
-from .types import JSON
+import logging
+import os
+import re
 import typing
+import webbrowser
+from getpass import getpass
+
+import capacity
+import click
+
+from .exc import NotOverwriting
+from .scotty import Scotty
+from .types import JSON
 
 if typing.TYPE_CHECKING:
     from .beam import Beam
@@ -41,21 +44,29 @@ def main() -> None:
 
 def _get_url() -> str:
     config = _get_config()
-    if not config or 'url' not in config:
+    if not config or "url" not in config:
         raise click.ClickException(
             """The URL of Scotty has not been set.
-You can set the URL either by using the --url flag or by running \"scotty set_url http://some.scotty.com\"""")
-    url = config['url']  # type: str
+You can set the URL either by using the --url flag or by running \"scotty set_url http://some.scotty.com\""""
+        )
+    url = config["url"]  # type: str
     return url
 
 
 def _write_beam_info(beam: "Beam", directory: str) -> None:
-    with open(os.path.join(directory, 'beam.txt'), 'w') as f:
-        f.write("""Start: {start}
+    with open(os.path.join(directory, "beam.txt"), "w") as f:
+        f.write(
+            """Start: {start}
 Host: {host}
 Directory: {directory}
 Comment: {comment}
-""".format(start=beam.start, host=beam.host, directory=beam.directory, comment=beam.comment))
+""".format(
+                start=beam.start,
+                host=beam.host,
+                directory=beam.directory,
+                comment=beam.comment,
+            )
+        )
 
 
 def _link_beam(storage_base: str, beam: "Beam", dest: str) -> None:
@@ -72,16 +83,18 @@ def _link_beam(storage_base: str, beam: "Beam", dest: str) -> None:
 
 @main.command()
 @click.argument("beam_id_or_tag")
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
-@click.option('--storage_base', default='/var/scotty', help='Base location of Scotty\'s storage')
-@click.option('-d', '--dest', default=None, help='Link destination')
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
+@click.option(
+    "--storage_base", default="/var/scotty", help="Base location of Scotty's storage"
+)
+@click.option("-d", "--dest", default=None, help="Link destination")
 def link(beam_id_or_tag: str, url: str, storage_base: str, dest: str) -> None:
     """Create symbolic links representing a single beam or a set of beams by their tag ID.
     To link a specific beam just use write its id as an argument.
     To link an entire tag specify t:[tag_name] as an argument, replacing [tag_name] with the name of the tag"""
     scotty = Scotty(url)
 
-    if beam_id_or_tag.startswith('t:'):
+    if beam_id_or_tag.startswith("t:"):
         tag = beam_id_or_tag[2:]
         if dest is None:
             dest = tag
@@ -98,7 +111,7 @@ def link(beam_id_or_tag: str, url: str, storage_base: str, dest: str) -> None:
 
 @main.command()
 @click.argument("beam_id_or_tag")
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
 def show(beam_id_or_tag: str, url: str) -> None:
     """List the files of the given beam or tag"""
     scotty = Scotty(url)
@@ -114,7 +127,7 @@ def show(beam_id_or_tag: str, url: str) -> None:
 
         print("")
 
-    if beam_id_or_tag.startswith('t:'):
+    if beam_id_or_tag.startswith("t:"):
         tag = beam_id_or_tag[2:]
         for beam in scotty.get_beams_by_tag(tag):
             _list(beam)
@@ -142,17 +155,28 @@ def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) -> Non
 
 @main.command()
 @click.argument("beam_id_or_tag")
-@click.option('--dest', default=None, help='Destination directory')
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
-@click.option('-f', '--filter', default=None, help="Download only files that contain the given string in their name (case insensetive)")
-@click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing files on the disk')
-def down(beam_id_or_tag: str, dest: str, url: str, overwrite: bool, filter: str) -> None:  # pylint: disable=W0622
+@click.option("--dest", default=None, help="Destination directory")
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
+@click.option(
+    "-f",
+    "--filter",
+    default=None,
+    help="Download only files that contain the given string in their name (case insensetive)",
+)
+@click.option(
+    "--overwrite/--no-overwrite",
+    default=False,
+    help="Overwrite existing files on the disk",
+)
+def down(
+    beam_id_or_tag: str, dest: str, url: str, overwrite: bool, filter: str
+) -> None:  # pylint: disable=W0622
     """Download a single beam or a set of beams by their tag ID.
     To download a specific beam just use write its id as an argument.
     To download an entire tag specify t:[tag_name] as an argument, replacing [tag_name] with the name of the tag"""
     scotty = Scotty(url)
 
-    if beam_id_or_tag.startswith('t:'):
+    if beam_id_or_tag.startswith("t:"):
         tag = beam_id_or_tag[2:]
         if dest is None:
             dest = tag
@@ -173,34 +197,58 @@ def up() -> None:
 
 @up.command()
 @click.argument("directory")
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
-@click.option('-t', '--tag', 'tags', multiple=True,
-              help='Tag to be associated with the beam. Can be specified multiple times')
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
+@click.option(
+    "-t",
+    "--tag",
+    "tags",
+    multiple=True,
+    help="Tag to be associated with the beam. Can be specified multiple times",
+)
 def local(directory: str, url: str, tags: typing.List[str]) -> None:
-    logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s', level=logging.DEBUG)
+    logging.basicConfig(
+        format="%(name)s:%(levelname)s:%(message)s", level=logging.DEBUG
+    )
 
     scotty = Scotty(url)
 
-    click.echo('Beaming up {}'.format(directory))
+    click.echo("Beaming up {}".format(directory))
     beam_id = scotty.beam_up(directory, tags=tags)
-    click.echo('Successfully beamed beam #{}'.format(beam_id))
+    click.echo("Successfully beamed beam #{}".format(beam_id))
 
 
 @up.command()
 @click.argument("path")
 @click.option("--rsa_key", type=click.Path(exists=True, dir_okay=False))
 @click.option("--email")
-@click.option("--goto", is_flag=True, default=False, help="Open your browser at the beam page")
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
+@click.option(
+    "--goto", is_flag=True, default=False, help="Open your browser at the beam page"
+)
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
 @click.option("--stored_key", default=None)
-@click.option('-t', '--tag', 'tags', multiple=True,
-              help='Tag to be associated with the beam. Can be specified multiple times')
-def remote(url: str, path: str, rsa_key: str, email: str, goto: bool, stored_key: str, tags: typing.List[str]) -> None:
+@click.option(
+    "-t",
+    "--tag",
+    "tags",
+    multiple=True,
+    help="Tag to be associated with the beam. Can be specified multiple times",
+)
+def remote(
+    url: str,
+    path: str,
+    rsa_key: str,
+    email: str,
+    goto: bool,
+    stored_key: str,
+    tags: typing.List[str],
+) -> None:
     scotty = Scotty(url)
 
     m = _BEAM_PATH.search(path)
     if not m:
-        raise click.ClickException("Invalid path. Path should be in the form of user@host:/path/to/directory")
+        raise click.ClickException(
+            "Invalid path. Path should be in the form of user@host:/path/to/directory"
+        )
 
     password = None
     user, host, directory = m.groups()
@@ -211,9 +259,21 @@ def remote(url: str, path: str, rsa_key: str, email: str, goto: bool, stored_key
         pass
     else:
         password = getpass("Password for {}@{}: ".format(user, host))
-    beam_id = scotty.initiate_beam(user, host, directory, password, rsa_key, email, stored_key=stored_key, tags=tags)
-    click.echo("Successfully initiated beam #{} to {}@{}:{}".format(
-        beam_id, user, host, directory))
+    beam_id = scotty.initiate_beam(
+        user,
+        host,
+        directory,
+        password,
+        rsa_key,
+        email,
+        stored_key=stored_key,
+        tags=tags,
+    )
+    click.echo(
+        "Successfully initiated beam #{} to {}@{}:{}".format(
+            beam_id, user, host, directory
+        )
+    )
 
     beam_url = "{}/#/beams/{}".format(url, beam_id)
     if goto:
@@ -223,8 +283,10 @@ def remote(url: str, path: str, rsa_key: str, email: str, goto: bool, stored_key
 
 
 @main.command("tag")
-@click.option("-d", "--delete", help="Delete the specified tag", is_flag=True, default=False)
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
+@click.option(
+    "-d", "--delete", help="Delete the specified tag", is_flag=True, default=False
+)
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
 @click.argument("tag")
 @click.argument("beam")
 def tag_beam(tag: str, beam: int, delete: bool, url: str) -> None:
@@ -243,14 +305,14 @@ def set_url(url: str) -> None:
     scotty = Scotty(url)
     scotty.sanity_check()
 
-    config['url'] = url
+    config["url"] = url
     _save_config(config)
 
 
 @main.command()
 @click.argument("beam_id")
 @click.argument("comment")
-@click.option('--url', default=_get_url, help='Base URL of Scotty')
+@click.option("--url", default=_get_url, help="Base URL of Scotty")
 def set_comment(beam_id: int, url: str, comment: str) -> None:
     """Set a comment for the specified beam"""
     scotty = Scotty(url)
