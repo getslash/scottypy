@@ -1,3 +1,5 @@
+import os
+
 import requests
 
 
@@ -21,3 +23,7 @@ def raise_for_status(response: requests.Response) -> None:
             ),
             response=response,
         )
+
+
+def fix_path_sep_for_current_platform(file_name: str) -> str:
+    return file_name.replace("\\", os.path.sep).replace("/", os.path.sep)

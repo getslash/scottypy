@@ -6,7 +6,7 @@ import dateutil.parser
 
 from .exc import NotOverwriting
 from .types import JSON
-from .utils import raise_for_status
+from .utils import fix_path_sep_for_current_platform, raise_for_status
 
 if typing.TYPE_CHECKING:
     from requests import Session
@@ -76,7 +76,7 @@ class File(object):
 
     def download(self, directory: str = ".", overwrite: bool = False) -> None:
         """Download the file to the specified directory, retaining its name"""
-        subdir, file_ = os.path.split(self.file_name)
+        subdir, file_ = os.path.split(fix_path_sep_for_current_platform(self.file_name))
         subdir = os.path.join(directory, subdir)
         file_ = os.path.join(subdir, file_)
 
