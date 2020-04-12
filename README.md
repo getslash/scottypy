@@ -21,6 +21,12 @@ git push origin : --tags
 
 ## ChangeLog
 
+### 0.23.1
+
+* Provide more information on exceptions
+* Add type hinting
+* Fix bug with downloading windows paths on linux
+
 ### 0.22.1
 
 * Fix bug with prefetch and then beam up without explicitly setting version
