@@ -1,3 +1,4 @@
+import os
 from http import HTTPStatus
 
 import pytest
@@ -33,8 +34,12 @@ def test_raise_for_status_no_error():
 
 
 def test_fix_path_sep_for_current_platform_windows_path():
-    assert utils.fix_path_sep_for_current_platform(r"a\b\c") == "a/b/c"
+    assert utils.fix_path_sep_for_current_platform(r"a\b\c") == os.path.join(
+        "a", "b", "c"
+    )
 
 
 def test_fix_path_sep_for_current_platform_linux_path():
-    assert utils.fix_path_sep_for_current_platform("a/b/c") == "a/b/c"
+    assert utils.fix_path_sep_for_current_platform("a/b/c") == os.path.join(
+        "a", "b", "c"
+    )
