@@ -133,7 +133,7 @@ def show(beam_id_or_tag: str, url: str) -> None:
         for beam in scotty.get_beams_by_tag(tag):
             _list(beam)
     else:
-        _list(scotty.get_beam(beam_id_or_tag))
+        _list(asyncio.get_event_loop().run_until_complete(scotty.get_beam(beam_id_or_tag)))
 
 
 async def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) -> None:
@@ -192,7 +192,7 @@ def down(
             )
 
     else:
-        beam = scotty.get_beam(beam_id_or_tag)
+        beam = await scotty.get_beam(beam_id_or_tag)
         dest = dest or beam_id_or_tag
         beams.append(
             _download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter)
@@ -329,5 +329,5 @@ def set_comment(beam_id: int, url: str, comment: str) -> None:
     """Set a comment for the specified beam"""
     scotty = Scotty(url)
 
-    beam = scotty.get_beam(beam_id)
+    beam = asyncio.get_event_loop().run_until_complete(scotty.get_beam(beam_id))
     beam.set_comment(comment)
