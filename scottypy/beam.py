@@ -144,3 +144,9 @@ class Beam(object):
         pact = Pact("Waiting for beam {}".format(self.id))
         pact.until(self._check_finish)
         return pact
+
+    def delete(self) -> None:
+        response = self._scotty.session.delete(
+            "{0}/beams/{1}".format(self._scotty.url, self.id)
+        )
+        raise_for_status(response)
