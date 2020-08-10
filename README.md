@@ -21,6 +21,11 @@ git push origin : --tags
 
 ## ChangeLog
 
+### 0.24.0
+
+* Add filtering by issue
+* Add delete method to beam
+
 ### 0.23.1
 
 * Provide more information on exceptions

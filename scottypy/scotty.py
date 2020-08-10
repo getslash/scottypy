@@ -406,6 +406,21 @@ class Scotty(object):
         ids = (b["id"] for b in response.json()["beams"])
         return [self.get_beam(id_) for id_ in ids]
 
+    def get_beams_by_issue(self, issue: str) -> typing.List[Beam]:
+        """Retrieve the list of beams associated with the specified issue.
+
+        :param str issue: The name of the issue.
+        :return: a list of :class:`.Beam` objects.
+        """
+
+        response = self._session.get(
+            "{0}/beams?issue={1}".format(self._url, issue), timeout=_TIMEOUT
+        )
+        raise_for_status(response)
+
+        ids = (b["id"] for b in response.json()["beams"])
+        return [self.get_beam(id_) for id_ in ids]
+
     def sanity_check(self) -> None:
         """Check if this instance of Scotty is functioning. Raise an exception if something's wrong"""
         response = requests.get("{0}/info".format(self._url))
