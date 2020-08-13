@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import errno
 import json
 import logging
@@ -18,11 +19,14 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+import aiohttp
+from aiohttp import ClientSession
+
 from .beam import Beam
 from .exc import PathNotExists
 from .file import File
 from .types import JSON
-from .utils import raise_for_status
+from .utils import execute_http, raise_for_status
 
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
@@ -146,8 +150,6 @@ class Scotty(object):
     def prefetch_combadge(
         self, combadge_version: str = _DEFAULT_COMBADGE_VERSION
     ) -> None:
-        """Prefetch the combadge to a temporary file. Future beams will use that combadge
-        instead of having to re-download it."""
         self._get_combadge(combadge_version=combadge_version)
 
     def remove_combadge(self) -> None:
@@ -354,7 +356,7 @@ class Scotty(object):
         )
         raise_for_status(response)
 
-    def get_beam(self, beam_id: typing.Union[str, int]) -> "Beam":
+    async def get_beam(self, beam_id: typing.Union[str, int]) -> "Beam":
         """Retrieve details about the specified beam.
 
         :param int beam_id: Beam ID or tag
@@ -397,14 +399,20 @@ class Scotty(object):
         :param str tag: The name of the tag.
         :return: a list of :class:`.Beam` objects.
         """
-
         response = self._session.get(
             "{0}/beams?tag={1}".format(self._url, tag), timeout=_TIMEOUT
         )
-        raise_for_status(response)
+        response.raise_for_status()
 
-        ids = (b["id"] for b in response.json()["beams"])
-        return [self.get_beam(id_) for id_ in ids]
+        beams_id_list = (b["id"] for b in response.json()["beams"])
+        beams = []
+        for beam_id in beams_id_list:
+            beams.append(self.get_beam(beam_id))
+
+        loop = asyncio.get_event_loop()
+        beams_result = loop.run_until_complete(asyncio.gather(*beams))
+
+        return beams_result
 
     def get_beams_by_issue(self, issue: str) -> typing.List[Beam]:
         """Retrieve the list of beams associated with the specified issue.

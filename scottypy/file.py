@@ -4,6 +4,8 @@ from datetime import datetime
 
 import dateutil.parser
 
+import aiohttp
+
 from .exc import NotOverwriting
 from .types import JSON
 from .utils import fix_path_sep_for_current_platform, raise_for_status
@@ -66,15 +68,18 @@ class File(object):
             mtime,
         )
 
-    def stream_to(self, fileobj: "typing.BinaryIO") -> None:
+    async def fetch(self, session, url):
+        return await session.get(url)
+
+    async def stream_to(self, fileobj: "typing.BinaryIO") -> None:
         """Fetch the file content from the server and write it to fileobj"""
-        response = self._session.get(self.url, stream=True)
-        raise_for_status(response)
+        async with aiohttp.ClientSession() as session:
+            response = await self.fetch(session, self.url)
+            response.raise_for_status()
+            async for chunk in response.content.iter_chunked(_CHUNK_SIZE):
+                fileobj.write(chunk)
 
-        for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
-            fileobj.write(chunk)
-
-    def download(self, directory: str = ".", overwrite: bool = False) -> None:
+    async def download(self, directory: str = ".", overwrite: bool = False) -> None:
         """Download the file to the specified directory, retaining its name"""
         subdir, file_ = os.path.split(fix_path_sep_for_current_platform(self.file_name))
         subdir = os.path.join(directory, subdir)
@@ -90,7 +95,7 @@ class File(object):
             raise NotOverwriting(file_)
 
         with open(file_, "wb") as f:
-            self.stream_to(f)
+            await self.stream_to(f)
 
         if self.mtime is not None:
             mtime = _to_epoch(self.mtime)

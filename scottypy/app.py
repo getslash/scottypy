@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import asyncio
 import json
 import logging
 import os
@@ -102,7 +103,7 @@ def link(beam_id_or_tag: str, url: str, storage_base: str, dest: str) -> None:
         for beam in scotty.get_beams_by_tag(tag):
             _link_beam(storage_base, beam, os.path.join(dest, str(beam.id)))
     else:
-        beam = scotty.get_beam(beam_id_or_tag)
+        beam = asyncio.run(scotty.get_beam(beam_id_or_tag))
         if dest is None:
             dest = beam_id_or_tag
 
@@ -132,21 +133,23 @@ def show(beam_id_or_tag: str, url: str) -> None:
         for beam in scotty.get_beams_by_tag(tag):
             _list(beam)
     else:
-        _list(scotty.get_beam(beam_id_or_tag))
+        _list(asyncio.get_event_loop().run_until_complete(scotty.get_beam(beam_id_or_tag)))
 
 
-def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) -> None:
+async def _download_beam(beam: "Beam", dest: str, overwrite: bool, filter: str) -> None:
     if not os.path.isdir(dest):
         os.makedirs(dest)
 
     click.echo("Downloading beam {} to directory {}".format(beam.id, dest))
 
+    tasks = []
     for file_ in beam.get_files(filter_=filter):
         click.echo("Downloading {}".format(file_.file_name))
         try:
-            file_.download(dest, overwrite=overwrite)
+            tasks.append(file_.download(dest, overwrite=overwrite))
         except NotOverwriting as e:
             click.echo("{} already exists. Use --overwrite to overwrite".format(e.file))
+    await asyncio.gather(*tasks)
 
     _write_beam_info(beam, dest)
 
@@ -176,18 +179,27 @@ def down(
     To download an entire tag specify t:[tag_name] as an argument, replacing [tag_name] with the name of the tag"""
     scotty = Scotty(url)
 
+    beams = []
     if beam_id_or_tag.startswith("t:"):
         tag = beam_id_or_tag[2:]
-        if dest is None:
-            dest = tag
+        dest = dest or tag
 
         for beam in scotty.get_beams_by_tag(tag):
-            _download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter)
+            beams.append(
+                _download_beam(
+                    beam, os.path.join(dest, str(beam.id)), overwrite, filter
+                )
+            )
+
     else:
-        beam = scotty.get_beam(beam_id_or_tag)
-        if dest is None:
-            dest = beam_id_or_tag
-        _download_beam(beam, dest, overwrite, filter)
+        beam = await scotty.get_beam(beam_id_or_tag)
+        dest = dest or beam_id_or_tag
+        beams.append(
+            _download_beam(beam, os.path.join(dest, str(beam.id)), overwrite, filter)
+        )
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(*beams))
 
 
 @main.group()
@@ -317,5 +329,5 @@ def set_comment(beam_id: int, url: str, comment: str) -> None:
     """Set a comment for the specified beam"""
     scotty = Scotty(url)
 
-    beam = scotty.get_beam(beam_id)
+    beam = asyncio.get_event_loop().run_until_complete(scotty.get_beam(beam_id))
     beam.set_comment(comment)
