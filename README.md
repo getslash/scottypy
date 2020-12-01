@@ -9,10 +9,9 @@
 1. Run the following:
 ```
 VERSION=...
-echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
-git add scottypy/__version__.py
-git commit -m "Bump version to $VERSION"
 git flow release start "$VERSION"
+echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
+git commit -am "Bump version to $VERSION"
 git push --set-upstream origin "release/$VERSION"
 git flow release finish "$VERSION"
 git push origin : --tags
@@ -20,6 +19,10 @@ git push origin : --tags
 
 
 ## ChangeLog
+
+### 0.25.0
+
+* Use combadge v2 by default (which supports windows hosts)
 
 ### 0.24.0
 
