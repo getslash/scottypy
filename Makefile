@@ -2,7 +2,7 @@ default: check
 
 
 format:
-	isort -c -rc scottypy unittests
+	isort -vb -c -rc scottypy unittests
 	black --check scottypy unittests
 
 do_format:
