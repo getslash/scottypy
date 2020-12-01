@@ -147,7 +147,8 @@ def test_prefetch_combadge_v1_and_then_v2(scotty):
 @pytest.mark.parametrize("combadge_version", ["v1", "v2"])
 def test_beam_up(scotty, directory, combadge_version):
     scotty.beam_up(
-        directory=directory, combadge_version=combadge_version,
+        directory=directory,
+        combadge_version=combadge_version,
     )
     _validate_beam_up(combadge_version=combadge_version, directory=directory)
 
@@ -176,7 +177,8 @@ def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
         scotty.beam_up(
-            directory=directory, combadge_version=combadge_version,
+            directory=directory,
+            combadge_version=combadge_version,
         )
         api_call_logger.assert_urls_equal_to(["http://mock-scotty/beams"])
         _validate_beam_up(combadge_version=combadge_version, directory=directory)
@@ -193,7 +195,8 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
         scotty.beam_up(
-            directory=directory, combadge_version="v2",
+            directory=directory,
+            combadge_version="v2",
         )
         api_call_logger.assert_urls_equal_to(
             [
@@ -215,7 +218,8 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
         scotty.beam_up(
-            directory=directory, combadge_version="v2",
+            directory=directory,
+            combadge_version="v2",
         )
         api_call_logger.assert_urls_equal_to(
             [
@@ -227,7 +231,8 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
 
     with api_call_logger.isolate():
         scotty.beam_up(
-            directory=directory, combadge_version="v2",
+            directory=directory,
+            combadge_version="v2",
         )
         api_call_logger.assert_urls_equal_to(["http://mock-scotty/beams"])
         _validate_beam_up(combadge_version="v2", directory=directory)

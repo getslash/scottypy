@@ -27,7 +27,7 @@ from .utils import raise_for_status
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
 _TIMEOUT = 5
-_DEFAULT_COMBADGE_VERSION = "v1"
+_DEFAULT_COMBADGE_VERSION = "v2"
 logger = logging.getLogger("scotty")  # type: logging.Logger
 
 
@@ -163,7 +163,10 @@ class Scotty(object):
         response = self._session.get(
             "{}/combadge".format(self._url),
             timeout=_TIMEOUT,
-            params={"combadge_version": combadge_version, "os_type": sys.platform,},
+            params={
+                "combadge_version": combadge_version,
+                "os_type": sys.platform,
+            },
         )
         raise_for_status(response)
 
@@ -466,7 +469,12 @@ class Scotty(object):
         return tracker_id
 
     def create_issue(self, tracker_id: int, id_in_tracker: str) -> int:
-        data = {"issue": {"tracker_id": tracker_id, "id_in_tracker": id_in_tracker,}}
+        data = {
+            "issue": {
+                "tracker_id": tracker_id,
+                "id_in_tracker": id_in_tracker,
+            }
+        }
         response = self._session.post(
             "{}/issues".format(self._url), data=json.dumps(data), timeout=_TIMEOUT
         )
