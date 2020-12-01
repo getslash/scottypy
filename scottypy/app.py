@@ -6,9 +6,8 @@ import typing
 import webbrowser
 from getpass import getpass
 
-import click
-
 import capacity
+import click
 
 from .exc import NotOverwriting
 from .scotty import Scotty
