@@ -10,8 +10,9 @@ from .types import JSON
 
 if typing.TYPE_CHECKING:
     from datetime import datetime
-    from .scotty import Scotty
+
     from .file import File
+    from .scotty import Scotty
 
 
 class Beam(object):
