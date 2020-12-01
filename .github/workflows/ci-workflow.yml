@@ -19,7 +19,7 @@ jobs:
         run: pip install -e . -r unittests/requirements.txt pylint mypy
       - name: Format
         if: matrix.python_version == '3.8'
-        run: pip install black isort<5 && make format
+        run: pip install black "isort<5" && make format
       - name: Lint
         run: make lint
       - name: Unittest
