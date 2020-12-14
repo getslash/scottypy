@@ -420,8 +420,10 @@ class Scotty(object):
         per_page = 50
         for page in itertools.count(1):
             response = self._session.get(
-                "{0}/beams?issue={1}&page={2}&per_page={3}".format(self._url, issue, page, per_page),
-                timeout=_TIMEOUT
+                "{0}/beams?issue={1}&page={2}&per_page={3}".format(
+                    self._url, issue, page, per_page
+                ),
+                timeout=_TIMEOUT,
             )
             raise_for_status(response)
 

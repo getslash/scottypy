@@ -161,10 +161,12 @@ def scotty(api_call_logger):
 
     @app.route("/info")
     def info():
-        return jsonify({
-            "transporter": "mock-transporter",
-            "version": "0.0.0",
-        })
+        return jsonify(
+            {
+                "transporter": "mock-transporter",
+                "version": "0.0.0",
+            }
+        )
 
     with FlaskLoopback(app).on(("mock-scotty", 80)):
         yield Scotty(url)
