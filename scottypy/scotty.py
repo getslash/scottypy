@@ -416,7 +416,7 @@ class Scotty(object):
         :param str issue: The name of the issue.
         :return: a list of :class:`.Beam` objects.
         """
-        beams = []
+        beams = []  # type: typing.List[Beam]
         for page in itertools.count(1):
             response = self._session.get(
                 "{0}/beams?issue={1}&page={2}".format(self._url, issue, page),
