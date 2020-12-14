@@ -20,6 +20,10 @@ git push origin : --tags
 
 ## ChangeLog
 
+### 0.25.1
+
+* Fix get_beams_by_issue so that it will use pagination
+
 ### 0.25.0
 
 * Use combadge v2 by default (which supports windows hosts)
