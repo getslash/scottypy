@@ -1,2 +1,4 @@
 requests_mock
 pytest
+flask
+-e git+https://github.com/vmalloc/Flask-Loopback.git@develop#egg=flask_loopback

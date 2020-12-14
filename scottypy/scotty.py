@@ -1,5 +1,6 @@
 import abc
 import errno
+import itertools
 import json
 import logging
 import os
@@ -415,14 +416,23 @@ class Scotty(object):
         :param str issue: The name of the issue.
         :return: a list of :class:`.Beam` objects.
         """
+        beams = []  # type: typing.List[Beam]
+        per_page = 50
+        for page in itertools.count(1):
+            response = self._session.get(
+                "{0}/beams?issue={1}&page={2}&per_page={3}".format(
+                    self._url, issue, page, per_page
+                ),
+                timeout=_TIMEOUT,
+            )
+            raise_for_status(response)
 
-        response = self._session.get(
-            "{0}/beams?issue={1}".format(self._url, issue), timeout=_TIMEOUT
-        )
-        raise_for_status(response)
-
-        ids = (b["id"] for b in response.json()["beams"])
-        return [self.get_beam(id_) for id_ in ids]
+            response_json = response.json()
+            ids = (b["id"] for b in response_json["beams"])
+            beams.extend(self.get_beam(id_) for id_ in ids)
+            if page >= response_json["meta"]["total_pages"]:
+                break
+        return beams
 
     def sanity_check(self) -> None:
         """Check if this instance of Scotty is functioning. Raise an exception if something's wrong"""
