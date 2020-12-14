@@ -1,15 +1,13 @@
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,unused-variable
 import contextlib
 import datetime
 import os
-import re
 import sys
 import urllib.parse
-from functools import partial
 
 import flask
 import pytest
-from flask import send_file, Flask, request, jsonify
+from flask import Flask, jsonify, request, send_file
 from flask_loopback import FlaskLoopback
 
 from scottypy import Scotty
@@ -22,7 +20,7 @@ class APICallLogger:
 
     def log_call(self, request):
         try:
-            json = request.json()
+            json = request.json
         except Exception:
             json = None
         self.calls.append(dict(url=request.url, params=dict(request.values), json=json))
@@ -73,9 +71,9 @@ def scotty(api_call_logger):
     url = "http://mock-scotty"
 
     @app.route("/combadge")
-    def combadge():
+    def combadge_file():
         api_call_logger.log_call(flask.request)
-        combadge_version = flask.request.values.combadge_version
+        combadge_version = flask.request.values.get("combadge_version")
         fixtures_folder = os.path.join(os.path.dirname(__file__), "fixtures")
         if combadge_version == "v1":
             file_name = "combadge.py"
@@ -92,51 +90,80 @@ def scotty(api_call_logger):
     @app.route("/beams", methods=["POST"])
     def beams():
         api_call_logger.log_call(flask.request)
-        json = flask.request.json()
-        return jsonify({
-            "beam": {
-                "id": 666,
-                "start": datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z",
-                "size": 0,
-                "host": json["beam"].get("host"),
-                "comment": json["beam"].get("comment"),
-                "directory": json["beam"].get("directory"),
-                "initiator": json["beam"].get("user"),
-                "error": None,
-                "combadge_contacted": False,
-                "pending_deletion": False,
-                "completed": False,
-                "deleted": False,
-                "pins": [],
-                "tags": [],
-                "associated_issues": [],
-                "purge_time": 0,
+        json = flask.request.json
+        date = datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z"
+        return jsonify(
+            {
+                "beam": {
+                    "id": 666,
+                    "start": date,
+                    "size": 0,
+                    "host": json["beam"].get("host"),
+                    "comment": json["beam"].get("comment"),
+                    "directory": json["beam"].get("directory"),
+                    "initiator": json["beam"].get("user"),
+                    "error": None,
+                    "combadge_contacted": False,
+                    "pending_deletion": False,
+                    "completed": False,
+                    "deleted": False,
+                    "pins": [],
+                    "tags": [],
+                    "associated_issues": [],
+                    "purge_time": 0,
+                }
             }
-        })
+        )
 
     beam_count = 2
     all_beams = [
-        {"id": i, "start": datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z", "size": 0,
-         "host": "host{}".format(i), "comment": "comment{}".format(i), "directory": "directory{}".format(i),
-         "initiator": "user{}".format(i), "error": None, "combadge_contacted": False, "pending_deletion": False,
-         "completed": False, "deleted": False, "pins": [], "tags": [], "associated_issues": [], "purge_time": 0, }
-        for i in range(beam_count)]
+        {
+            "id": i,
+            "start": datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z",
+            "size": 0,
+            "host": "host{}".format(i),
+            "comment": "comment{}".format(i),
+            "directory": "directory{}".format(i),
+            "initiator": "user{}".format(i),
+            "error": None,
+            "combadge_contacted": False,
+            "pending_deletion": False,
+            "completed": False,
+            "deleted": False,
+            "pins": [],
+            "tags": [],
+            "associated_issues": [],
+            "purge_time": 0,
+        }
+        for i in range(beam_count)
+    ]
 
     @app.route("/beams")
     def beams_index():
         api_call_logger.log_call(request)
-        page = int(request.values.get('page', 1))
-        return jsonify({
-            "beams": all_beams[page - 1:page],
-            "meta": {
-                "total_pages": beam_count,
+        page = int(request.values.get("page", 1))
+        return jsonify(
+            {
+                "beams": all_beams[page - 1 : page],
+                "meta": {
+                    "total_pages": beam_count,
+                },
             }
-        })
+        )
 
     @app.route("/beams/<int:beam>")
     def single_beam(beam):
+        return jsonify(
+            {
+                "beam": all_beams[beam],
+            }
+        )
+
+    @app.route("/info")
+    def info():
         return jsonify({
-            "beam": all_beams[beam],
+            "transporter": "mock-transporter",
+            "version": "0.0.0",
         })
 
     with FlaskLoopback(app).on(("mock-scotty", 80)):
@@ -195,7 +222,9 @@ def test_prefetch_and_then_beam_up_doesnt_download_combadge_again(
             "http://mock-scotty/"
             "combadge?"
             "combadge_version={combadge_version}"
-            "&os_type=linux".format(combadge_version=combadge_version)
+            "&os_type={platform}".format(
+                combadge_version=combadge_version, platform=sys.platform
+            )
         )
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
@@ -213,7 +242,9 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version="v1")
         expected_combadge_url = (
-            "http://mock-scotty/combadge?combadge_version=v1&os_type=linux"
+            "http://mock-scotty/combadge?combadge_version=v1&os_type={}".format(
+                sys.platform
+            )
         )
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
@@ -224,7 +255,9 @@ def test_prefetch_and_then_beam_different_version_downloads_combadge_again(
         api_call_logger.assert_urls_equal_to(
             [
                 "http://mock-scotty/beams",
-                "http://mock-scotty/combadge?combadge_version=v2&os_type=linux",
+                "http://mock-scotty/combadge?combadge_version=v2&os_type={}".format(
+                    sys.platform
+                ),
             ]
         )
         _validate_beam_up(combadge_version="v2", directory=directory)
@@ -236,7 +269,9 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version="v1")
         expected_combadge_url = (
-            "http://mock-scotty/combadge?combadge_version=v1&os_type=linux"
+            "http://mock-scotty/combadge?combadge_version=v1&os_type={}".format(
+                sys.platform
+            )
         )
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
@@ -247,7 +282,9 @@ def test_prefetch_and_then_beam_different_version_twice_downloads_combadge_again
         api_call_logger.assert_urls_equal_to(
             [
                 "http://mock-scotty/beams",
-                "http://mock-scotty/combadge?combadge_version=v2&os_type=linux",
+                "http://mock-scotty/combadge?combadge_version=v2&os_type={}".format(
+                    sys.platform
+                ),
             ]
         )
         _validate_beam_up(combadge_version="v2", directory=directory)
@@ -267,8 +304,8 @@ def test_prefetch_and_then_beam_up_without_explicit_version_uses_prefetched(
 ):
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version=combadge_version)
-        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={combadge_version}&os_type=linux".format(
-            combadge_version=combadge_version
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={combadge_version}&os_type={platform}".format(
+            combadge_version=combadge_version, platform=sys.platform
         )
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
@@ -283,8 +320,9 @@ def test_prefetch_and_then_initiate_beam_without_explicit_version_uses_prefetche
 ):
     with api_call_logger.isolate():
         scotty.prefetch_combadge(combadge_version=combadge_version)
-        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={combadge_version}&os_type=linux".format(
-            combadge_version=combadge_version
+        expected_combadge_url = "http://mock-scotty/combadge?combadge_version={combadge_version}&os_type={platform}".format(
+            combadge_version=combadge_version,
+            platform=sys.platform,
         )
         api_call_logger.assert_urls_equal_to([expected_combadge_url])
     with api_call_logger.isolate():
