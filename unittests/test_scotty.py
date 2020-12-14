@@ -2,12 +2,15 @@
 import contextlib
 import datetime
 import os
+import re
 import sys
 import urllib.parse
 from functools import partial
 
+import flask
 import pytest
-import requests_mock
+from flask import send_file, Flask, request, jsonify
+from flask_loopback import FlaskLoopback
 
 from scottypy import Scotty
 from scottypy.scotty import CombadgePython, CombadgeRust
@@ -20,9 +23,9 @@ class APICallLogger:
     def log_call(self, request):
         try:
             json = request.json()
-        except TypeError:
+        except Exception:
             json = None
-        self.calls.append(dict(url=request.url, params=request.qs, json=json))
+        self.calls.append(dict(url=request.url, params=dict(request.values), json=json))
 
     @contextlib.contextmanager
     def isolate(self):
@@ -59,50 +62,6 @@ class APICallLogger:
             self._assert_urls_equal(actual_url, expected_url)
 
 
-def combadge(api_call_logger, request, context):
-    api_call_logger.log_call(request)
-    combadge_version = request.qs.get("combadge_version")[0]
-    os_type = request.qs.get("os_type")[0]
-    fixtures_folder = os.path.join(os.path.dirname(__file__), "fixtures")
-    if combadge_version == "v1":
-        file_name = "combadge.py"
-    elif combadge_version == "v2" and os_type == "linux":
-        file_name = "combadge"
-    else:
-        raise ValueError(
-            "Unknown combadge version {combadge_version}".format(
-                combadge_version=combadge_version
-            )
-        )
-    with open(os.path.join(fixtures_folder, file_name), "rb") as f:
-        return f.read()
-
-
-def beams(api_call_logger, request, context):
-    api_call_logger.log_call(request)
-    json = request.json()
-    return {
-        "beam": {
-            "id": 666,
-            "start": datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z",
-            "size": 0,
-            "host": json["beam"].get("host"),
-            "comment": json["beam"].get("comment"),
-            "directory": json["beam"].get("directory"),
-            "initiator": json["beam"].get("user"),
-            "error": None,
-            "combadge_contacted": False,
-            "pending_deletion": False,
-            "completed": False,
-            "deleted": False,
-            "pins": [],
-            "tags": [],
-            "associated_issues": [],
-            "purge_time": 0,
-        }
-    }
-
-
 @pytest.fixture
 def api_call_logger():
     return APICallLogger()
@@ -110,13 +69,77 @@ def api_call_logger():
 
 @pytest.fixture
 def scotty(api_call_logger):
+    app = Flask(__name__)
     url = "http://mock-scotty"
-    with requests_mock.Mocker() as m:
-        m.get(
-            "{url}/combadge".format(url=url), content=partial(combadge, api_call_logger)
-        )
-        m.get("{url}/info".format(url=url), json={"transporter": "mock-transporter"})
-        m.post("{url}/beams".format(url=url), json=partial(beams, api_call_logger))
+
+    @app.route("/combadge")
+    def combadge():
+        api_call_logger.log_call(flask.request)
+        combadge_version = flask.request.values.combadge_version
+        fixtures_folder = os.path.join(os.path.dirname(__file__), "fixtures")
+        if combadge_version == "v1":
+            file_name = "combadge.py"
+        elif combadge_version == "v2":
+            file_name = "combadge"
+        else:
+            raise ValueError(
+                "Unknown combadge version {combadge_version}".format(
+                    combadge_version=combadge_version
+                )
+            )
+        return send_file(os.path.join(fixtures_folder, file_name))
+
+    @app.route("/beams", methods=["POST"])
+    def beams():
+        api_call_logger.log_call(flask.request)
+        json = flask.request.json()
+        return jsonify({
+            "beam": {
+                "id": 666,
+                "start": datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z",
+                "size": 0,
+                "host": json["beam"].get("host"),
+                "comment": json["beam"].get("comment"),
+                "directory": json["beam"].get("directory"),
+                "initiator": json["beam"].get("user"),
+                "error": None,
+                "combadge_contacted": False,
+                "pending_deletion": False,
+                "completed": False,
+                "deleted": False,
+                "pins": [],
+                "tags": [],
+                "associated_issues": [],
+                "purge_time": 0,
+            }
+        })
+
+    beam_count = 2
+    all_beams = [
+        {"id": i, "start": datetime.datetime(year=2020, month=2, day=27).isoformat() + "Z", "size": 0,
+         "host": "host{}".format(i), "comment": "comment{}".format(i), "directory": "directory{}".format(i),
+         "initiator": "user{}".format(i), "error": None, "combadge_contacted": False, "pending_deletion": False,
+         "completed": False, "deleted": False, "pins": [], "tags": [], "associated_issues": [], "purge_time": 0, }
+        for i in range(beam_count)]
+
+    @app.route("/beams")
+    def beams_index():
+        api_call_logger.log_call(request)
+        page = int(request.values.get('page', 1))
+        return jsonify({
+            "beams": all_beams[page - 1:page],
+            "meta": {
+                "total_pages": beam_count,
+            }
+        })
+
+    @app.route("/beams/<int:beam>")
+    def single_beam(beam):
+        return jsonify({
+            "beam": all_beams[beam],
+        })
+
+    with FlaskLoopback(app).on(("mock-scotty", 80)):
         yield Scotty(url)
 
 
@@ -310,3 +333,8 @@ def test_initiate_beam(scotty, directory, combadge_version, api_call_logger):
             }
         },
     )
+
+
+def test_get_beams_by_issue(scotty, api_call_logger):
+    beams = scotty.get_beams_by_issue("TEST-1234")
+    assert len(beams) == 2
