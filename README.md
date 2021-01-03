@@ -1,10 +1,10 @@
 
-# Scotty Client Library  
-  
-## Notes For Developers  
-  
-### How to release a new version  
-  
+# Scotty Client Library
+
+## Notes For Developers
+
+### How to release a new version
+
 1. Update changelog in `README.md` file
 1. Run the following:
 ```
@@ -19,6 +19,10 @@ git push origin : --tags
 
 
 ## ChangeLog
+
+### 0.25.2
+
+* Increase timeout to 30 seconds
 
 ### 0.25.1
 
