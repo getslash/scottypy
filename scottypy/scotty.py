@@ -27,7 +27,7 @@ from .utils import raise_for_status
 
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
-_TIMEOUT = 5
+_TIMEOUT = 30
 _DEFAULT_COMBADGE_VERSION = "v2"
 logger = logging.getLogger("scotty")  # type: logging.Logger
 
