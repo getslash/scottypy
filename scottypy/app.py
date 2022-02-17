@@ -205,7 +205,9 @@ def up() -> None:
     multiple=True,
     help="Tag to be associated with the beam. Can be specified multiple times",
 )
-def local(directory: str, url: str, tags: typing.List[str], issue: str, tracker: str) -> None:
+def local(
+    directory: str, url: str, tags: typing.List[str], issue: str, tracker: str
+) -> None:
     logging.basicConfig(
         format="%(name)s:%(levelname)s:%(message)s", level=logging.DEBUG
     )
@@ -213,7 +215,9 @@ def local(directory: str, url: str, tags: typing.List[str], issue: str, tracker:
     scotty = Scotty(url)
 
     click.echo("Beaming up {}".format(directory))
-    beam_id = scotty.beam_up(directory, tags=tags, associated_issue=issue, tracker_name=tracker)
+    beam_id = scotty.beam_up(
+        directory, tags=tags, associated_issue=issue, tracker_name=tracker
+    )
     click.echo("Successfully beamed beam #{}".format(beam_id))
 
 
