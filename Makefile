@@ -14,7 +14,7 @@ test:
 	pytest unittests/
 
 lint:
-	MYPYPATH=stubs mypy scottypy --strict
+	MYPYPATH=stubs mypy scottypy --strict --install-types
 	pylint --rcfile .pylintrc -j $(shell nproc) scottypy unittests
 
 check: format lint test
