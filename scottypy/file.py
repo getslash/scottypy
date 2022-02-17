@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
     from requests import Session
 
 
-_CHUNK_SIZE = 1024 ** 2 * 4
+_CHUNK_SIZE = 1024**2 * 4
 _EPOCH = datetime.utcfromtimestamp(0)
 
 

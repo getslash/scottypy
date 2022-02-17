@@ -17,7 +17,7 @@ from uuid import uuid4
 import emport
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry  # type: ignore
 
 from .beam import Beam
 from .exc import PathNotExists
@@ -66,10 +66,11 @@ class CombadgePython(Combadge):
         return cls(emport.import_file(combadge_file.name))
 
     def remove(self) -> None:
-        os.remove(self._combadge_module.__file__)
+        if self._combadge_module.__file__ is not None:
+            os.remove(self._combadge_module.__file__)
 
     def run(self, *, beam_id: int, directory: str, transporter_host: str) -> None:
-        self._combadge_module.beam_up(beam_id, directory, transporter_host)  # type: ignore
+        self._combadge_module.beam_up(beam_id, directory, transporter_host)
 
 
 class CombadgeRust(Combadge):
@@ -501,7 +502,7 @@ class Scotty(object):
     def get_issue_by_tracker(
         self, tracker_id: int, id_in_tracker: str
     ) -> typing.Optional[JSON]:
-        params = {
+        params: typing.Dict[str, typing.Union[str, int]] = {
             "tracker_id": tracker_id,
             "id_in_tracker": id_in_tracker,
         }
