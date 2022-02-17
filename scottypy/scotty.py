@@ -199,6 +199,7 @@ class Scotty(object):
         beam_type: typing.Optional[str] = None,
         tags: typing.Optional[typing.List[str]] = None,
         return_beam_object: bool = False,
+        tracker_name: str = "JIRA",
         associated_issue: typing.Optional[str] = None,
     ) -> typing.Union["Beam", int]:
         """Beam up the specified local directory to Scotty.
@@ -208,6 +209,7 @@ class Scotty(object):
         :param list tags: An optional list of tags to be associated with the beam.
         :param bool return_beam_object: If set to True, return a :class:`.Beam` instance.
         :param str associated_issue: An optional associated Jira ticket.
+        :param str tracker_name: Name of the issues tracker.
 
         :return: the beam id."""
         if not os.path.exists(directory):
@@ -246,8 +248,8 @@ class Scotty(object):
         beam_obj = Beam.from_json(self, beam_data["beam"])
 
         if associated_issue:
-            tracker_jira_id = self.get_tracker_id(name="JIRA")
-            issue_id = self.create_issue(tracker_id=tracker_jira_id, id_in_tracker=associated_issue)
+            tracker_id = self.get_tracker_id(name=tracker_name)
+            issue_id = self.create_issue(tracker_id=tracker_id, id_in_tracker=associated_issue)
             beam_obj.set_issue_association(issue_id=issue_id, associated=True)
 
         combadge = self._get_combadge(combadge_version)
