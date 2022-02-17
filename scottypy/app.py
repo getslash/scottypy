@@ -196,6 +196,7 @@ def up() -> None:
 @up.command()
 @click.argument("directory")
 @click.option("--url", default=_get_url, help="Base URL of Scotty")
+@click.option("--issue", help="Associated JIRA ticket name")
 @click.option(
     "-t",
     "--tag",
@@ -203,7 +204,7 @@ def up() -> None:
     multiple=True,
     help="Tag to be associated with the beam. Can be specified multiple times",
 )
-def local(directory: str, url: str, tags: typing.List[str]) -> None:
+def local(directory: str, url: str, tags: typing.List[str], issue: str) -> None:
     logging.basicConfig(
         format="%(name)s:%(levelname)s:%(message)s", level=logging.DEBUG
     )
@@ -211,7 +212,7 @@ def local(directory: str, url: str, tags: typing.List[str]) -> None:
     scotty = Scotty(url)
 
     click.echo("Beaming up {}".format(directory))
-    beam_id = scotty.beam_up(directory, tags=tags)
+    beam_id = scotty.beam_up(directory, tags=tags, associated_issue=issue)
     click.echo("Successfully beamed beam #{}".format(beam_id))
 
 
