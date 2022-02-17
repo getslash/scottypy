@@ -208,7 +208,7 @@ class Scotty(object):
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :param list tags: An optional list of tags to be associated with the beam.
         :param bool return_beam_object: If set to True, return a :class:`.Beam` instance.
-        :param str associated_issue: An optional associated Jira ticket.
+        :param str associated_issue: An optional associated issue ticket.
         :param str tracker_name: Name of the issues tracker.
 
         :return: the beam id."""
