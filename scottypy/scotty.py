@@ -241,10 +241,13 @@ class Scotty(object):
         raise_for_status(response)
 
         tracker_jira_id = self.get_tracker_id(name="JIRA")
-        self.create_issue(tracker_id=tracker_jira_id, id_in_tracker=associated_issue)
+        issue_id = self.create_issue(tracker_id=tracker_jira_id, id_in_tracker=associated_issue)
 
         beam_data = response.json()
         beam_id = beam_data["beam"]["id"]  # type: int
+
+        beam_obj = Beam.from_json(self, beam_data["beam"])
+        beam_obj.set_issue_association(issue_id=issue_id, associated=True)
 
         combadge = self._get_combadge(combadge_version)
         combadge.run(
@@ -252,7 +255,7 @@ class Scotty(object):
         )
 
         if return_beam_object:
-            return Beam.from_json(self, beam_data["beam"])
+            return beam_obj
         else:
             return beam_id
 
