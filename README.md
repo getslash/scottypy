@@ -55,3 +55,9 @@ git push --tags
 
 - Support python3.8
 - Support Rust Combadge (v2)
+
+
+## Notes
+
+- We used to use gitflow, but it became a bit too much of a hassle, so we switched to a simple master+tag flow. The develop branch was kept for legacy reasons but is not used anymore.
+
