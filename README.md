@@ -4,17 +4,15 @@
 
 ### How to release a new version
 
-1. Checkout the master branch
-1. Update changelog in `README.md` file
-1. Run the following:
+- Checkout the master branch
+- Update changelog in `README.md` file
+- Run the following:
 
-```
-VERSION=...
-echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
-git commit -am "Bump version to $VERSION"
-git tag -a -m "$VERSION"
-git push --tags
-```
+        VERSION=...
+        echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
+        git commit -am "Bump version to $VERSION"
+
+- Create a release via github (with a new tag)
 
 ## ChangeLog
 
