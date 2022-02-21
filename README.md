@@ -12,9 +12,10 @@
 VERSION=...
 echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
 git commit -am "Bump version to $VERSION"
-git tag -a -m "$VERSION"
-git push --tags
 ```
+
+1. Create a release via github (with a new tag)
+
 
 ## ChangeLog
 
