@@ -19,7 +19,7 @@ git push origin : --tags
 
 ## ChangeLog
 
-### 0.26.2
+### 0.26.0
 
 - Add option to link beam to issue when uploading a beam
 
