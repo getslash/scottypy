@@ -8,11 +8,9 @@
 1. Update changelog in `README.md` file
 1. Run the following:
 
-```
-VERSION=...
-echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
-git commit -am "Bump version to $VERSION"
-```
+        VERSION=...
+        echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
+        git commit -am "Bump version to $VERSION"
 
 1. Create a release via github (with a new tag)
 
