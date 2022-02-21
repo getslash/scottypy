@@ -1,5 +1,6 @@
 import abc
 import errno
+import itertools
 import json
 import logging
 import os
@@ -16,7 +17,7 @@ from uuid import uuid4
 import emport
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry  # type: ignore
 
 from .beam import Beam
 from .exc import PathNotExists
@@ -26,7 +27,7 @@ from .utils import raise_for_status
 
 _SLEEP_TIME = 10
 _NUM_OF_RETRIES = (60 // _SLEEP_TIME) * 15
-_TIMEOUT = 5
+_TIMEOUT = 30
 _DEFAULT_COMBADGE_VERSION = "v2"
 logger = logging.getLogger("scotty")  # type: logging.Logger
 
@@ -65,10 +66,11 @@ class CombadgePython(Combadge):
         return cls(emport.import_file(combadge_file.name))
 
     def remove(self) -> None:
-        os.remove(self._combadge_module.__file__)
+        if self._combadge_module.__file__ is not None:
+            os.remove(self._combadge_module.__file__)
 
     def run(self, *, beam_id: int, directory: str, transporter_host: str) -> None:
-        self._combadge_module.beam_up(beam_id, directory, transporter_host)  # type: ignore
+        self._combadge_module.beam_up(beam_id, directory, transporter_host)
 
 
 class CombadgeRust(Combadge):
@@ -197,6 +199,8 @@ class Scotty(object):
         beam_type: typing.Optional[str] = None,
         tags: typing.Optional[typing.List[str]] = None,
         return_beam_object: bool = False,
+        tracker_name: str = "JIRA",
+        associated_issue: typing.Optional[str] = None,
     ) -> typing.Union["Beam", int]:
         """Beam up the specified local directory to Scotty.
 
@@ -204,6 +208,8 @@ class Scotty(object):
         :param str email: Your email. If unspecified, the initiator of the beam will be anonymous.
         :param list tags: An optional list of tags to be associated with the beam.
         :param bool return_beam_object: If set to True, return a :class:`.Beam` instance.
+        :param str associated_issue: An optional associated issue ticket.
+        :param str tracker_name: Name of the issues tracker.
 
         :return: the beam id."""
         if not os.path.exists(directory):
@@ -238,6 +244,14 @@ class Scotty(object):
 
         beam_data = response.json()
         beam_id = beam_data["beam"]["id"]  # type: int
+        beam_obj = Beam.from_json(self, beam_data["beam"])
+
+        if associated_issue:
+            tracker_id = self.get_tracker_id(name=tracker_name)
+            issue_id = self.create_issue(
+                tracker_id=tracker_id, id_in_tracker=associated_issue
+            )
+            beam_obj.set_issue_association(issue_id=issue_id, associated=True)
 
         combadge = self._get_combadge(combadge_version)
         combadge.run(
@@ -245,7 +259,7 @@ class Scotty(object):
         )
 
         if return_beam_object:
-            return Beam.from_json(self, beam_data["beam"])
+            return beam_obj
         else:
             return beam_id
 
@@ -415,14 +429,23 @@ class Scotty(object):
         :param str issue: The name of the issue.
         :return: a list of :class:`.Beam` objects.
         """
+        beams = []  # type: typing.List[Beam]
+        per_page = 50
+        for page in itertools.count(1):
+            response = self._session.get(
+                "{0}/beams?issue={1}&page={2}&per_page={3}".format(
+                    self._url, issue, page, per_page
+                ),
+                timeout=_TIMEOUT,
+            )
+            raise_for_status(response)
 
-        response = self._session.get(
-            "{0}/beams?issue={1}".format(self._url, issue), timeout=_TIMEOUT
-        )
-        raise_for_status(response)
-
-        ids = (b["id"] for b in response.json()["beams"])
-        return [self.get_beam(id_) for id_ in ids]
+            response_json = response.json()
+            ids = (b["id"] for b in response_json["beams"])
+            beams.extend(self.get_beam(id_) for id_ in ids)
+            if page >= response_json["meta"]["total_pages"]:
+                break
+        return beams
 
     def sanity_check(self) -> None:
         """Check if this instance of Scotty is functioning. Raise an exception if something's wrong"""
@@ -491,7 +514,7 @@ class Scotty(object):
     def get_issue_by_tracker(
         self, tracker_id: int, id_in_tracker: str
     ) -> typing.Optional[JSON]:
-        params = {
+        params: typing.Dict[str, typing.Union[str, int]] = {
             "tracker_id": tracker_id,
             "id_in_tracker": id_in_tracker,
         }

@@ -128,7 +128,7 @@ class Beam(object):
         raise_for_status(response)
         self._comment = comment
 
-    def set_issue_association(self, issue_id: str, associated: bool) -> None:
+    def set_issue_association(self, issue_id: int, associated: bool) -> None:
         raise_for_status(
             self._scotty.session.request(
                 "POST" if associated else "DELETE",

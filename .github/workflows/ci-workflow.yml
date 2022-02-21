@@ -6,7 +6,7 @@ jobs:
     runs-on: ${{ matrix.image }}
     strategy:
       matrix:
-        python_version: [3.5, 3.6, 3.7, 3.8]
+        python_version: [3.6, 3.7, 3.8, 3.9]
         image: [ubuntu-18.04]
 
     steps:
@@ -18,8 +18,7 @@ jobs:
       - name: Install requirements
         run: pip install -e . -r unittests/requirements.txt pylint mypy
       - name: Format
-        if: matrix.python_version == '3.8'
-        run: pip install black "isort<5" && make format
+        run: pip install black isort && make format
       - name: Lint
         run: make lint
       - name: Unittest

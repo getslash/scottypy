@@ -2,7 +2,7 @@ from collections import namedtuple
 from typing import Any
 
 
-_StrCandidate = namedtuple('StrCandidate', ['weight', 'unit', 'str', 'unit_name'])
+_StrCandidate = namedtuple('_StrCandidate', ['weight', 'unit', 'str', 'unit_name'])
 
 class Capacity:
     bits: Any = ...
