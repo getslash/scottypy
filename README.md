@@ -4,20 +4,21 @@
 
 ### How to release a new version
 
+1. Checkout the master branch
 1. Update changelog in `README.md` file
 1. Run the following:
 
 ```
 VERSION=...
-git flow release start "$VERSION"
 echo "__version__ = \"$VERSION\"" > scottypy/__version__.py
 git commit -am "Bump version to $VERSION"
-git push --set-upstream origin "release/$VERSION"
-git flow release finish "$VERSION"
-git push origin : --tags
+git tag -a -m "$VERSION"
+git push --tags
 ```
 
 ## ChangeLog
+
+### Unreleased
 
 ### 0.26.0
 
@@ -54,3 +55,9 @@ git push origin : --tags
 
 - Support python3.8
 - Support Rust Combadge (v2)
+
+
+## Notes
+
+- We used to use gitflow, but it became a bit too much of a hassle, so we switched to a simple master+tag flow. The develop branch was kept for legacy reasons but is not used anymore.
+
