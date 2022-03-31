@@ -36,6 +36,7 @@ def _save_config(config: JSON) -> None:
 
 
 @click.group()
+@click.version_option()
 def main() -> None:
     pass
 
