@@ -18,6 +18,10 @@
 
 ### Unreleased
 
+### 0.27.0
+
+- Add `--version`
+
 ### 0.26.0
 
 - Add option to link beam to issue when uploading a beam
@@ -54,8 +58,6 @@
 - Support python3.8
 - Support Rust Combadge (v2)
 
-
 ## Notes
 
 - We used to use gitflow, but it became a bit too much of a hassle, so we switched to a simple master+tag flow. The develop branch was kept for legacy reasons but is not used anymore.
-
